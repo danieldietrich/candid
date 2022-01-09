@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
-    <script type="module" crossorigin src="/assets/index.7fad0b42.js"></script>
+    <script type="module" crossorigin src="/assets/index.dce73526.js"></script>
   </head>
   <body>
     <hello-world to="candid"></hello-world>
@@ -16,6 +16,7 @@
         <script lang="candid">
           this.connectedCallback = function () {
             console.log("the connectedCallback", this);
+            console.log("b", this.b);
           }
           this.disconnectedCallback = () => {
             console.log("the disconnectedCallback", this);
