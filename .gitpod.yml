@@ -1,0 +1,10 @@
+tasks:
+  - before: curl gitprompt.sh/install | sh
+    init: . ~/.gitprompt ; npm i
+    command: npm run dev:gitpod
+ports:
+  - port: 3000
+    onOpen: open-browser
+vscode:
+  extensions:
+    - voorjaar.windicss-intellisense

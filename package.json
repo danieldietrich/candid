@@ -1,0 +1,46 @@
+{
+  "name": "candid",
+  "version": "0.0.0",
+  "description": "Candid is an honest, frameworkless JavaScript library for building web applications.",
+  "keywords": [
+    "candid",
+    "vanillajs",
+    "frameworkless",
+    "web components",
+    "custom elements",
+    "browser",
+    "javasscript"
+  ],
+  "files": ["dist"],
+  "main": "./dist/candid.umd.js",
+  "module": "./dist/candid.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/candid.es.js",
+      "require": "./dist/candid.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:gitpod": "APP_ENV=gitpod vite",
+    "build:lib": "vite build --config ./vite-dist.config.js",
+    "build:docs": "vite build",
+    "prepare": "npm run build:lib"
+  },
+  "devDependencies": {
+    "vite": "^2.7.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danieldietrich/candid.git"
+  },
+  "homepage": "https://candid.link",
+  "bugs": "https://github.com/danieldietrich/candid/issues",
+  "author": {
+    "name": "Daniel Dietrich",
+    "email": "cafebab3@gmail.com",
+    "url": "https://danieldietrich.dev"
+  },
+  "funding": "https://github.com/sponsors/danieldietrich",
+  "license": "MIT"
+}

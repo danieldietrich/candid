@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Candid</title>
+  </head>
+  <body>
+    <hello-world to="candid"></hello-world>
+    <hello-world></hello-world>
+    <web-component name="hello-world" props="{ to: 'world' }">
+      <template>
+        <script lang="candid">
+          this.onMount = function () {
+            console.log("onMount", this);
+          }
+          this.onUnmount = () => {
+            console.log("onUnmount", this);
+          }
+          this.onUpdate = function(name, oldValue, newValue) {
+            console.log("onUpdate", name, oldValue, newValue, this);
+            switch (name) {
+              case "to":
+                this.root.querySelector('span#name').innerHTML = newValue;
+                break;
+              default:
+                break;
+            }
+          }
+          this.onAdopt = function() {
+            console.log("onAdopt", this);
+          }
+        </script>
+        <h1>Hello <span id="name"></span></h1>
+      </template>
+    </web-component>
+    <script type="module">
+      import candid from "./src/index.js";
+      window.addEventListener('load', () => candid());
+    </script>
+  </body>
+</html>
