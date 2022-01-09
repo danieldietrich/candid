@@ -5,12 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
-    <script type="module" crossorigin src="/assets/index.dce73526.js"></script>
   </head>
   <body>
     <hello-world to="candid"></hello-world>
     <hello-world></hello-world>
-    
+    <!--
+    <script type="module">
+      import candid from "./src/index.js";
+      candid();
+    </script>
+    -->
+
     <web-component name="hello-world" props="{to: 'world'}">
       <template>
         <script lang="candid">
@@ -38,5 +43,9 @@
         <h1>Hello <span id="name"></span></h1>
       </template>
     </web-component>
+
+    <script src="./dist/candid.umd.js"></script>
+    <script>candid();</script>
+
   </body>
 </html>
