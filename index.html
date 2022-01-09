@@ -15,6 +15,10 @@
       candid();
     </script>
     -->
+    <script src="./dist/candid.umd.js"></script>
+    <script>
+      window.addEventListener('load', () => candid());
+    </script>
 
     <web-component name="hello-world" props="{to: 'world'}">
       <template>
@@ -43,9 +47,6 @@
         <h1>Hello <span id="name"></span></h1>
       </template>
     </web-component>
-
-    <script src="./dist/candid.umd.js"></script>
-    <script>candid();</script>
 
   </body>
 </html>
