@@ -5,43 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
-    <script type="module" crossorigin src="/assets/index.0259e496.js"></script>
+    <script type="module" crossorigin src="/assets/index.780b4f76.js"></script>
   </head>
   <body>
+    <hello-world to="candid"></hello-world>
     <hello-world></hello-world>
-    <hello-world greeting="Hi ya'all!"></hello-world>
-    <hello-world2 to="candid"></hello-world2>
-    <hello-world2></hello-world2>
-    <web-component name="hello-world" props="{ greeting: 'Hi!' }">
+    <web-component name="hello-world" props="{ to: 'world' }">
       <template>
         <script lang="candid">
-          this.connectedCallback = function () {
-            console.log("läuft doch!", this);
-          }
-          this.attributeChangedCallback = function (name, oldValue, newValue) {
-            console.log(this);
-            this.root.querySelector('h1').innerHTML = `Hello ${newValue}!`;
-          }
-        </script>
-        <style>
-          .greet {
-              color: red;
-          }
-        </style>
-        <h1 class="greet"></h1>
-      </template>
-    </web-component>
-    <web-component name="hello-world2" props="{ to: 'world' }">
-      <template>
-        <script lang="candid">
-          this.connectedCallback = function () {
+          this._connectedCallback = function () {
             console.log("the connectedCallback", this);
-            console.log("b", this.b);
           }
-          this.disconnectedCallback = () => {
+          this._disconnectedCallback = () => {
             console.log("the disconnectedCallback", this);
           }
-          this.attributeChangedCallback = function(name, oldValue, newValue) {
+          this._attributeChangedCallback = function(name, oldValue, newValue) {
             console.log("the attributeChangedCallback", name, oldValue, newValue, this);
             switch (name) {
               case "to":
@@ -51,14 +29,13 @@
                 break;
             }
           }
-          this.adoptedCallback = function() {
+          this._adoptedCallback = function() {
             console.log("the adoptedCallback", this);
           }
         </script>
         <h1>Hello <span id="name"></span></h1>
       </template>
     </web-component>
-    <!-- module -->
     
   </body>
 </html>
