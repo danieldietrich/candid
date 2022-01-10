@@ -1,6 +1,6 @@
 {
   "name": "candid",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Candid is an honest, frameworkless JavaScript library for building web applications.",
   "keywords": [
     "candid",
@@ -11,7 +11,9 @@
     "browser",
     "javasscript"
   ],
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/candid.umd.js",
   "module": "./dist/candid.es.js",
   "exports": {
