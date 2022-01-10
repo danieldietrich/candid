@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
-    <script type="module" crossorigin src="/assets/index.780b4f76.js"></script>
+    <script type="module" crossorigin src="/assets/index.4f95299e.js"></script>
   </head>
   <body>
     <hello-world to="candid"></hello-world>
@@ -13,24 +13,24 @@
     <web-component name="hello-world" props="{ to: 'world' }">
       <template>
         <script lang="candid">
-          this._connectedCallback = function () {
-            console.log("the connectedCallback", this);
+          this.onMount = function () {
+            console.log("onMount", this);
           }
-          this._disconnectedCallback = () => {
-            console.log("the disconnectedCallback", this);
+          this.onUnmount = () => {
+            console.log("onUnmount", this);
           }
-          this._attributeChangedCallback = function(name, oldValue, newValue) {
-            console.log("the attributeChangedCallback", name, oldValue, newValue, this);
+          this.onUpdate = function(name, oldValue, newValue) {
+            console.log("onUpdate", name, oldValue, newValue, this);
             switch (name) {
               case "to":
-                this.querySelector('span#name').innerHTML = newValue;
+                this.root.querySelector('span#name').innerHTML = newValue;
                 break;
               default:
                 break;
             }
           }
-          this._adoptedCallback = function() {
-            console.log("the adoptedCallback", this);
+          this.onAdopt = function() {
+            console.log("onAdopt", this);
           }
         </script>
         <h1>Hello <span id="name"></span></h1>
