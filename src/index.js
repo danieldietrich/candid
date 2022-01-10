@@ -71,7 +71,7 @@ export default () => {
 function createClass(props, mode, template) {
 
   // the script contents are read once but evaluated every time the element is created
-  const script = template && Array.from(template.content.querySelectorAll("script[lang='candid']")).map(s =>
+  const script = template && Array.from(template.content.querySelectorAll("script")).map(s =>
     s.parentNode.removeChild(s).textContent
   ).join('\n');
 
