@@ -23,7 +23,7 @@ export default () => {
 
     try {
 
-      // perform checks on the element
+      // Check custom element name
       const name = elem.getAttribute('name');
       if (name === null) {
         console.warn("[candid] Missing custom element name.", elem);
@@ -33,20 +33,25 @@ export default () => {
         console.warn("[candid] Invalid custom element name: '" + name + "'. See https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name", elem);
         return;
       }
+
+      // Check shadow root mode
       const mode = elem.getAttribute('mode');
       if (mode !== null && mode !== 'open' && mode !== 'closed') {
         console.warn("[candid] Invalid shadowRoot mode: '" + mode + "'. Valid values are 'open', 'closed' (or omit attribute). See https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/mode", elem);
         return;
       }
+
+      // We parse the props by using eval instead of JSON.parse, because the latter is too restrictive.
+      // The props are evaluated before connectedCallback, so they can be used in the static observedAttributes function.
       const props = elem?.hasAttribute('props') && eval('(' + elem.getAttribute('props') + ')') || {};
       if (props === null || typeof props !== 'object') {
         console.warn("[candid] Invalid props: '" + props + "'. Must be an object.", elem);
         return;
       }
 
-      // create class and register custom element
+      // Create class and register custom element
       const template = elem.querySelector('template');
-      const C = createClass(props, mode, template);
+      const C = createClass(template, mode, props);
       customElements.define(name, C);
 
     } catch (err) {
@@ -55,114 +60,187 @@ export default () => {
 
   });
 
-  // inform window that candid initialization is complete
-  window.dispatchEvent(new Event('candid-ready'));
-
 }
+
+/**
+ * The internal element property that is used to store the component context,
+ * consisting of state and lifecycle methods.
+ * The context is altered by the user <script> tags in the template.
+ */
+const __ctx = Symbol();
 
 /**
  * Creates a new custom element class from the given template.
  * 
- * @param {object} props
- * @param {?string} mode shadow root mode
  * @param {?HTMLTemplateElement} template 
+ * @param {?string} mode shadow root mode
+ * @param {?object} props default props
  * @returns a new custom element class
  */
-function createClass(props, mode, template) {
+function createClass(template, mode, props) {
 
   // the script contents are read once but evaluated every time the element is created
   const script = template && Array.from(template.content.querySelectorAll("script")).map(s =>
     s.parentNode.removeChild(s).textContent
-  ).join('\n');
+  ).join(';\n'); // add ; to avoid syntax errors
 
-  // Custom element class
   class C extends HTMLElement {
 
-    /** @type {ShadowRoot | HTMLElement} */
-    root;
-
-    /** stateful object, altered by <script lang="candid"> */
-    onMount = () => {};
-    onUnmount = () => {};
-    onUpdate = (name, oldValue, newValue) => {};
-    onAdopt = () => {};
-
+    /**
+     * document.createElement('my-element') creates a new instance of the custom element
+     * by calling this constructor.
+     * Because attributes may be added later, we need to initialize the properties lazily
+     * in the connectedCallback.
+     */
     constructor() {
       super();
-      // the script may not access the _root during construction time
+      // if mode === 'closed', shadowRoot is null but root is defined!
+      const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({  mode }) : this;
+      root.appendChild(template.content.cloneNode(true));
+      Object.defineProperty(this, __ctx, {
+        value: createContext(this, root)
+      });
+      // Run user <script> and define lifecycle methods as early as possible.
+      // Anything may happen here but the user must not rely on a fully initialized component.
+      // Especially, the user script should not try to access the DOM or the element attributes.
+      //
       if (script) {
-        (function () { eval(script) }.bind(this))(); // the script's scope is the element's state
+        (function () { eval(script) }.bind(this[__ctx]))();
       }
-      // initialize _root
-      const content = template.content.cloneNode(true);
-      this.root = (mode === 'open' || mode === 'closed') ? this.attachShadow({  mode }) : this;
-      this.root.appendChild(content);
     }
 
     static get observedAttributes() {
       return Object.keys(props);
     }
 
+    // Called when the element is inserted into the DOM.
     connectedCallback() {
       if (!this.isConnected) {
         return;
       }
-      Object.entries(props).forEach(([prop, value]) => {
-        // make properties lazy, see https://developers.google.com/web/fundamentals/web-components/best-practices#lazy-properties
-        if (this.hasOwnProperty(prop)) {
-          const value = this[prop];
-          delete this[prop];
-          this[prop] = value;
-        }
-        // set default value if attribute is not set
-        if (!this.hasAttribute(prop)) {
-          this[prop] = value;
-        }
-      }, this);
-      this.onMount();
+      // An element might be added (connected) to and removed (disconnected) multiple times from the DOM.
+      // We guard against multiple initializations using the __uninitialized context property.
+      if (this[__ctx].__uninitialized) {
+        delete this[__ctx].__uninitialized;
+        // Lazily initialize  properties, see https://developers.google.com/web/fundamentals/web-components/best-practices#lazy-properties
+        // Properties reflect attribute values, that way cycles are prevented. If the attribute is not set, we use a default value.
+        // Caution: If both attribute and property are set, we need to bite the bullet and the attribute value is used.
+        Object.entries(props).forEach(([prop, defaultValue]) => {
+          let value = defaultValue;
+          if (this.hasOwnProperty(prop)) {
+            value = this[prop];
+            delete this[prop];
+          }
+          createProperty(this, prop, defaultValue);
+          if (!this.hasAttribute(prop)) {
+            this[prop] = value;
+          }
+        });
+      }
+      // See slotchange event: https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement/slotchange_event
+      // See bubbling up shadow DOM events: https://javascript.info/shadow-dom-events
+      // We add the event listener once and don't remove it in the diconnectedCallback because it is possbile that contents may change in the disconnected state
+      this.addEventListener('slotchange', this[__ctx].onSlotChange);
+      this[__ctx].onMount();
     }
 
+    // Called when the element is removed from the DOM.
     disconnectedCallback() {
-      this.onUnmount();
+      this[__ctx].onUnmount();
+      this.removeEventListener('slotchange', this[__ctx].onSlotChange);
     }
 
+    // Called when an attribute is added, removed, or updated.
     attributeChangedCallback(name, oldValue, newValue) {
-      this.onUpdate(name, oldValue, newValue);
+      this[__ctx].onUpdate(name, oldValue, newValue);
     }
 
+    // Called when the element is moved to a new document.
     adoptedCallback() {
-      this.onAdopt();
+      this[__ctx].onAdopt();
     }
 
   }
 
-  // dynamically add getters and setters for element attributes
-  Object.entries(props).forEach(([prop, defaultValue]) => {
-    const propertyDescriptor = (typeof defaultValue === 'boolean') ? ({
-      get() {
-        return this.hasAttribute(prop);
-      },
-      set(value) {
-        if (value) {
-          this.setAttribute(prop, '');
-        } else {
-          this.removeAttribute(prop);
-        }
-      }
-    }) : ({
-      get() {
-        return this.getAttribute(prop);
-      },
-      set(value) {
-        if (value === null || value === undefined) {
-          this.removeAttribute(prop);
-        } else {
-          this.setAttribute(prop, value);
-        }
-      }
-    });
-    Object.defineProperty(C.prototype, prop, propertyDescriptor);
-  });
-
   return C;
+}
+
+/**
+ * Creates a new custom element property that reflects the attribute value.
+ * 
+ * @param {HTMLElement} target the element
+ * @param {string} prop the property name
+ * @param {any} defaultValue the default value
+ */ 
+function createProperty(target, prop, defaultValue) {
+  const propertyDescriptor = (typeof defaultValue === 'boolean') ? ({
+    get() {
+      return this.hasAttribute(prop);
+    },
+    set(value) {
+      if (value) {
+        this.setAttribute(prop, '');
+      } else {
+        this.removeAttribute(prop);
+      }
+    },
+    enumerable: true
+  }) : ({
+    get() {
+      return this.getAttribute(prop);
+    },
+    set(value) {
+      if (value === null || value === undefined) {
+        this.removeAttribute(prop);
+      } else {
+        this.setAttribute(prop, value);
+      }
+    },
+    enumerable: true
+  });
+  Object.defineProperty(target, prop, propertyDescriptor);
+}
+
+/**
+ * Creates a new custom element context.
+ * Root is either the element's shadowRoot or the element itself.
+ * 
+ * @param {HTMLElement} element
+ * @param {ShadowRoot | HTMLElement} root
+ * @return {Context}
+ * 
+ * @typedef {{
+ *   __uninitialized: boolean,
+ *   readonly element: HTMLElement, // the custom element class instance
+ *   readonly root: ShadowRoot | HTMLElement, // root = (element.shadowRoot ? element.shadowRoot : element)
+ *   onMount: () => void,
+ *   onUnmount: () => void,
+ *   onUpdate: (name: string, oldValue: string | null, newValue: string | null) => void,
+ *   onSlotChange: (event: any) => void,
+ *   onAdopt: () => void
+ * }} Context
+ */
+function createContext(element, root) {
+  const context = {
+    __uninitialized: true, // marker, will be removed in connectedCallback
+    element,
+    root,
+    onMount() {},
+    onUnmount() {},
+    onUpdate(name, oldValue, newValue) {},
+    onSlotChange(event) {},
+    onAdopt() {}
+  };
+  return Object.defineProperties(context, {
+    element: {
+      configurable: false,
+      enumerable: true,
+      writable: false
+    },
+    root: {
+      configurable: false,
+      enumerable: true,
+      writable: false
+    }
+  });
 }
