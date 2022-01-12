@@ -1,5 +1,16 @@
 // @ts-check
 
+// global store of visited web imports
+const webImports = new Set();
+
+//
+// CANDID
+//
+export default async () => {
+  await webImport(getBaseUrl(), document, webImports);
+  process();
+};
+
 /**
  * Check if the given name is a valid custom element name.
  * 
@@ -15,9 +26,9 @@ const isValidName = (() => {
 })();
 
 /**
- * A function that processes all custom elements in the document.
+ * High-level <web-component> functionality.
  */
-export default () => {
+function process() {
 
   document.querySelectorAll("web-component").forEach(elem => {
 
@@ -243,4 +254,86 @@ function createContext(element, root) {
       writable: false
     }
   });
+}
+
+/**
+ * High-level <web-import> functionality.
+ * 
+ * @param {string} base the base path
+ * @param {Element | DocumentFragment} element a node to import
+ * @param {Set} visited a set of imported urls
+ */
+async function webImport(base, element, visited) {
+  await Promise.all(Array.from(element.querySelectorAll('web-import')).map(async (el) => {
+      switch (el.getAttribute('status')) {
+        case 'loading':
+          break;
+        case 'error':
+          break;
+        default:
+          el.setAttribute('status', 'loading');
+          try {
+            const href = el.getAttribute('href');
+            const resourceUrl = createUrl(base, href);
+            if (visited.has(resourceUrl)) {
+              break;
+            } else {
+              visited.add(resourceUrl);
+            }
+            // TODO: add options to fetch, like crossorigin, credentials, mode, cache, redirect, referrer, integrity, keepalive, window, etc.
+            const response = await fetch(resourceUrl);
+            if (response.ok) {
+              const content = await response.text();
+              const fragment = document.createRange().createContextualFragment(content);
+              const newBaseUrl = extractBaseUrl(resourceUrl);
+              await webImport(newBaseUrl, fragment, visited);
+              el.parentNode.replaceChild(fragment, el);
+            } else {
+              el.setAttribute('status', 'error');
+              el.textContent = `${response.status} ${response.statusText}`;
+            }
+          } catch (error) {
+            el.setAttribute('status', 'error');
+            el.textContent = error.message;
+          }
+      }
+  }));
+}
+
+/**
+ * Strips the base URL from the given URL.
+ * 
+ * @param {string} href 
+ * @returns {string}
+ */
+function extractBaseUrl(href) {
+  return href.substring(0, href.lastIndexOf('/')) + "/";
+}
+
+/**
+ * Returns an url that is relative to the given base URL.
+ * 
+ * @param {string} base a base URL
+ * @param {string} href a URL
+ * @returns href relative to base
+ */
+function createUrl(base, href) {
+  if (href.startsWith('http://') || href.startsWith('https://')) {
+    return href;
+  } else if (href.startsWith('/')) {
+    return base.endsWith('/') ? base + href.substring(1) : base + href;
+  } else {
+    return base.endsWith('/') ? base + href : base + '/' + href;
+  }
+}
+
+/**
+ * @returns {string} the base URL of the actual document
+ */
+function getBaseUrl() {
+  const base = document.head.querySelector("base");
+  if (base) {
+    return base.href;
+  }
+  return document.URL;
 }
