@@ -1,8 +1,4 @@
-[![npm version](https://img.shields.io/npm/v/candid?logo=npm&style=flat-square)](https://www.npmjs.com/package/candid/)[![minzipped size](https://img.shields.io/bundlephobia/minzip/candid?style=flat-square)](https://bundlephobia.com/result?p=candid@latest)
-&nbsp;
-[![Sponsor](https://img.shields.io/badge/GitHub-💖Sponsors-b5b7b9?logo=github&style=flat-square)](https://github.com/sponsors/danieldietrich)[![license](https://img.shields.io/github/license/danieldietrich/copy?style=flat-square)](https://opensource.org/licenses/MIT/)
-&nbsp;
-[![Follow](https://img.shields.io/twitter/follow/danieldietrich?label=Follow&style=social)](https://twitter.com/danieldietrich/)
+[![npm version](https://img.shields.io/npm/v/candid?logo=npm&style=flat-square)](https://www.npmjs.com/package/candid/)[![brotlied](https://img.badgesize.io/https://cdn.jsdelivr.net/npm/candid.svg?compression=brotli&label=brotlied&max=1500&softmax=1300&style=flat-square)](https://www.jsdelivr.com/package/npm/candid)[![hits/month](https://data.jsdelivr.com/v1/package/npm/candid/badge)](https://www.jsdelivr.com/package/npm/candid)[![license](https://img.shields.io/github/license/danieldietrich/copy?style=flat-square)](https://opensource.org/licenses/MIT/)[![sponsor](https://img.shields.io/badge/GitHub-💖Sponsors-b5b7b9?logo=github&style=flat-square)](https://github.com/sponsors/danieldietrich)[![follow](https://img.shields.io/twitter/follow/danieldietrich?logo=twitter&style=flat-square)](https://twitter.com/danieldietrich/)
 
 ![Candid](./public/candid.svg)
 
