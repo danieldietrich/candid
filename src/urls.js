@@ -14,25 +14,25 @@ export function getBaseUrl() {
 /**
  * Strips the base URL from the given URL.
  * 
- * @param {string} href 
+ * @param {string} url 
  * @returns {string}
  */
-export function extractBaseUrl(href) {
-  return href.substring(0, href.lastIndexOf('/')) + "/";
+export function extractBaseUrl(url) {
+  return url.substring(0, url.lastIndexOf('/')) + "/";
 }
 
 /**
  * Returns an url that is relative to the given base URL.
  * 
  * @param {string} baseUrl a base URL
- * @param {string} href a URL
- * @returns href relative to base
+ * @param {string} url an absolute or relative URL
+ * @returns url relative to base
  */
-export function createUrl(baseUrl, href) {
-  if (href.startsWith('http://') || href.startsWith('https://')) {
-    return href;
+export function createUrl(baseUrl, url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
   }
-  return href.startsWith('/')
-    ? baseUrl.endsWith('/') ? baseUrl + href.substring(1) : baseUrl + href
-    : baseUrl.endsWith('/') ? baseUrl + href : baseUrl + '/' + href;
+  return url.startsWith('/')
+    ? baseUrl.endsWith('/') ? baseUrl + url.substring(1) : baseUrl + url
+    : baseUrl.endsWith('/') ? baseUrl + url : baseUrl + '/' + url;
 }

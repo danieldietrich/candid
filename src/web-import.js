@@ -1,11 +1,10 @@
 // @ts-check
 import { extractBaseUrl, createUrl } from './urls';
 
-// visited urls of web imports
-const webImports = new Set();
-
 /**
  * High-level <web-import> functionality.
+ * The contents of the <web-import> element are imported and inserted into the DOM.
+ * There is no internal caching, multiple imports of the same URL are all loaded.
  * 
  * @param {string} baseUrl the base path
  * @param {WithQuerySelectorAll} element an element to process
@@ -15,19 +14,14 @@ const webImports = new Set();
  */
 export async function webImport(baseUrl, element, debug) {
   const elements = element.querySelectorAll('web-import');
-  await Promise.all(Array.from(elements).map(async (el) => {
+  await Promise.allSettled(Array.from(elements).map(async (el) => {
     if (!el.getAttribute('status')) {
       el.setAttribute('status', 'loading');
       try {
-        const href = el.getAttribute('href');
-        const resourceUrl = createUrl(baseUrl, href);
-        if (webImports.has(resourceUrl)) {
-          return;
-        } else {
-          webImports.add(resourceUrl);
-        }
+        const link = el.getAttribute('src');
+        const resourceUrl = createUrl(baseUrl, link);
         // TODO: add options to fetch, like crossorigin, credentials, mode, cache, redirect, referrer, integrity, keepalive, window, etc.
-        const response = await fetch(resourceUrl);
+        const response = await fetch(resourceUrl + '?timestamp=' + Date.now()); // TODO(@@dd): remove timestamp
         if (response.ok) {
           const content = await response.text();
           const fragment = document.createRange().createContextualFragment(content);
@@ -40,6 +34,7 @@ export async function webImport(baseUrl, element, debug) {
           } else {
             el.parentNode.replaceChild(fragment, el);
           }
+          el.setAttribute('status', 'ok');
         } else {
           el.setAttribute('status', 'error');
           el.textContent = `${response.status} ${response.statusText}`;

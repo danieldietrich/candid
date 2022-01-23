@@ -121,6 +121,7 @@ const __ctx = Symbol();
  */
 function createClass(baseUrl, template, mode, props, script, componentProcessor) {
 
+  // TODO(@@dd): rething the processed lifecycle handing, including the connectedCallback and the customRegistry.upgrade() call
   let processed = false;
 
   class C extends HTMLElement {
@@ -136,23 +137,23 @@ function createClass(baseUrl, template, mode, props, script, componentProcessor)
       // if mode === 'closed', shadowRoot is null but root is defined!
       const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this;
       /** @ts-ignore @type {DocumentFragment} */
-      const content = template.content.cloneNode(true);
       if (!processed) {
-        componentProcessor(baseUrl, content).then(() => {
+        componentProcessor(baseUrl, template.content).then(() => {
           processed = true;
           customElements.upgrade(this); // TODO(@@dd): are callbacks called in the correct order when upgrading this element?
+          root.appendChild(template.content.cloneNode(true));
+          Object.defineProperty(this, __ctx, {
+            value: createContext(this, root)
+          });
+          // Run user <script> and define lifecycle methods as early as possible.
+          // Anything may happen here but the user must not rely on a fully initialized component.
+          // Especially, the user script should not try to access the DOM or the element attributes.
+          //
+          if (script) {
+            (function () { eval(script) }.bind(this[__ctx]))();
+          }
+    
         });
-      }
-      root.appendChild(template.content.cloneNode(true));
-      Object.defineProperty(this, __ctx, {
-        value: createContext(this, root)
-      });
-      // Run user <script> and define lifecycle methods as early as possible.
-      // Anything may happen here but the user must not rely on a fully initialized component.
-      // Especially, the user script should not try to access the DOM or the element attributes.
-      //
-      if (script) {
-        (function () { eval(script) }.bind(this[__ctx]))();
       }
     }
 
