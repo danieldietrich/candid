@@ -1,99 +1,127 @@
 // @ts-check
+import { getBaseUrl } from './urls';
+import { validate } from './validation';
+import { webImport } from './web-import';
 
-// global store of visited web imports
-const webImports = new Set();
+/**
+ * @typedef {import('./web-import').WithQuerySelectorAll} WithQuerySelectorAll
+ */
 
-//
-// CANDID
-//
-export default async () => {
-  await webImport(getBaseUrl(), document, webImports);
-  process();
+/**
+ * Candid entry point.
+ * 
+ * @param {Options} options
+ * 
+ * @typedef {{
+ *   debug?: boolean,                    // debug mode
+ *   elementProcessor?: ElementProcessor // process web-imported elements
+ * }} Options
+ * 
+ * @typedef {(...elements: Element[]) => Promise<void>} ElementProcessor
+ */
+export default async (options) => {
+  const { debug, elementProcessor } = options;
+  const root = document.documentElement;
+  const processor = createProcessor(elementProcessor, debug);
+  await processor(getBaseUrl(), root);
 };
 
 /**
- * Check if the given name is a valid custom element name.
+ * Creates processor function for web-components and web-imports.
  * 
- * @param {string} name
- * @return true if name is a valid custom element identifier, false otherwise
+ * @param {?ElementProcessor} elementProcessor 
+ * @param {?boolean} debug
+ * @returns {(baseUrl: string, element: Element) => Promise<void>}
  */
-const isValidName = (() => {
-  // see https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name
-  const PCENChar = "[-\.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}]"
-  const regexp = new RegExp(`^[a-z]${PCENChar}*-${PCENChar}*$`, 'u');
-  const reservedWords = ['annotation-xml', 'color-profile', 'font-face', 'font-face-src', 'font-face-uri', 'font-face-format', 'font-face-name', 'missing-glyph'];
-  return (name) => regexp.test(name) && !reservedWords.includes(name);
-})();
-
-/**
- * High-level <web-component> functionality.
- */
-function process() {
-
-  document.querySelectorAll("web-component").forEach(elem => {
-
-    try {
-
-      // Check custom element name
-      const name = elem.getAttribute('name');
-      if (name === null) {
-        console.warn("[candid] Missing custom element name.", elem);
-        return;
-      }
-      if (!isValidName(name)) {
-        console.warn("[candid] Invalid custom element name: '" + name + "'. See https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name", elem);
-        return;
-      }
-
-      // Check shadow root mode
-      const mode = elem.getAttribute('mode');
-      if (mode !== null && mode !== 'open' && mode !== 'closed') {
-        console.warn("[candid] Invalid shadowRoot mode: '" + mode + "'. Valid values are 'open', 'closed' (or omit attribute). See https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/mode", elem);
-        return;
-      }
-
-      // We parse the props by using eval instead of JSON.parse, because the latter is too restrictive.
-      // The props are evaluated before connectedCallback, so they can be used in the static observedAttributes function.
-      const props = elem?.hasAttribute('props') && eval('(' + elem.getAttribute('props') + ')') || {};
-      if (props === null || typeof props !== 'object') {
-        console.warn("[candid] Invalid props: '" + props + "'. Must be an object.", elem);
-        return;
-      }
-
-      // Create class and register custom element
-      const template = elem.querySelector('template');
-      const C = createClass(template, mode, props);
-      customElements.define(name, C);
-
-    } catch (err) {
-      console.error("[candid] Error processing custom element:", elem, err);
-    }
-
-  });
-
+function createProcessor(elementProcessor, debug) {
+  const componentProcessor = async (baseUrl, element) => {
+    await webImport(baseUrl, element, debug);
+    process(baseUrl, element, elementProcessor, componentProcessor, debug);
+  };
+  return componentProcessor;
 }
 
 /**
- * The internal element property that is used to store the component context,
+ * Processes <web-component> tags by creating and registering a new custom element class.
+ * 
+ * @param {string} baseUrl the base path
+ * @param {Element | DocumentFragment} element an element to process
+ * @param {?ElementProcessor} elementProcessor
+ * @param {(baseUrl: string, element: WithQuerySelectorAll) => Promise<void>} componentProcessor
+ * @param {?boolean} debug whether to enable debug mode
+ */
+function process(baseUrl, element, elementProcessor, componentProcessor, debug) {
+  element.querySelectorAll("web-component").forEach(elem => {
+    try {
+      const name = elem.getAttribute('name');
+      const mode = elem.getAttribute('mode');
+      const props = parseProps(elem.getAttribute('props'));
+      const template = elem.querySelector('template');
+      const validationResult = validate({ name, mode, props, template });
+      if (validationResult.length) {
+        validationResult.forEach(msg => console.warn('[candid] ' + msg, elem));
+        return;
+      }
+      const { script } = processTemplate(template, elementProcessor);
+      const C = createClass(baseUrl, template, mode, props, script, componentProcessor);
+      customElements.define(name, C); // throws if name is already registered, see https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#exceptions
+    } catch (err) {
+      console.error("[candid] Error processing web component:", elem, err);
+    }
+  });
+}
+
+/**
+ * Parses the given string into an object.
+ * 
+ * @param {string | null} str
+ * @returns {any} the result of parsing the string
+ * @throws {any} if the string cannot be evaluated
+ */
+function parseProps(str) {
+  // We parse the props by using eval instead of JSON.parse, because the latter is too restrictive.
+  // The props are evaluated before connectedCallback, so they can be used in the static observedAttributes function.
+  return str && eval('(' + str + ')');
+}
+
+/**
+ * Processes the template contents of the web component.
+ * 
+ * @param {?HTMLTemplateElement} template
+ * @param {?ElementProcessor} elementProcessor
+ * @return {{ script?: string }}
+ */
+function processTemplate(template, elementProcessor) {
+  // apply the injected elementProcessor to the template content
+  template && elementProcessor && elementProcessor(...template.content.querySelectorAll('*'));
+  // the script contents are read once but evaluated every time the element is created
+  const script = template && [...template.content.querySelectorAll("script")].map(s =>
+    s.parentNode.removeChild(s).textContent
+  ).join(';\n'); // add ; to avoid syntax errors
+  return { script };
+}
+
+/**
+ * The internal element property that is used to store the component's context,
  * consisting of state and lifecycle methods.
- * The context is altered by the user <script> tags in the template.
+ * The context is altered by user defined <script> tags in the template.
  */
 const __ctx = Symbol();
 
 /**
  * Creates a new custom element class from the given template.
  * 
+ * @param {string} baseUrl the base path
  * @param {?HTMLTemplateElement} template 
  * @param {?string} mode shadow root mode
  * @param {?object} props default props
+ * @param {string} script the script contents
+ * @param {(baseUrl: string, element: WithQuerySelectorAll) => Promise<void>} componentProcessor
  * @returns a new custom element class
  */
-function createClass(template, mode, props) {
+function createClass(baseUrl, template, mode, props, script, componentProcessor) {
 
-  // the script contents are read once but evaluated every time the element is created
-  const script = template && Array.from(template.content.querySelectorAll("script")).map(s =>
-    s.parentNode.removeChild(s).textContent
-  ).join(';\n'); // add ; to avoid syntax errors
+  let processed = false;
 
   class C extends HTMLElement {
 
@@ -107,6 +135,12 @@ function createClass(template, mode, props) {
       super();
       // if mode === 'closed', shadowRoot is null but root is defined!
       const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({  mode }) : this;
+      /** @ts-ignore @type {DocumentFragment} */
+      const content = template.content.cloneNode(true);
+      if (!processed) {
+        await componentProcessor(baseUrl, content);
+        processed = true;
+      }
       root.appendChild(template.content.cloneNode(true));
       Object.defineProperty(this, __ctx, {
         value: createContext(this, root)
@@ -254,86 +288,4 @@ function createContext(element, root) {
       writable: false
     }
   });
-}
-
-/**
- * High-level <web-import> functionality.
- * 
- * @param {string} base the base path
- * @param {Element | DocumentFragment} element a node to import
- * @param {Set} visited a set of imported urls
- */
-async function webImport(base, element, visited) {
-  await Promise.all(Array.from(element.querySelectorAll('web-import')).map(async (el) => {
-      switch (el.getAttribute('status')) {
-        case 'loading':
-          break;
-        case 'error':
-          break;
-        default:
-          el.setAttribute('status', 'loading');
-          try {
-            const href = el.getAttribute('href');
-            const resourceUrl = createUrl(base, href);
-            if (visited.has(resourceUrl)) {
-              break;
-            } else {
-              visited.add(resourceUrl);
-            }
-            // TODO: add options to fetch, like crossorigin, credentials, mode, cache, redirect, referrer, integrity, keepalive, window, etc.
-            const response = await fetch(resourceUrl);
-            if (response.ok) {
-              const content = await response.text();
-              const fragment = document.createRange().createContextualFragment(content);
-              const newBaseUrl = extractBaseUrl(resourceUrl);
-              await webImport(newBaseUrl, fragment, visited);
-              el.parentNode.replaceChild(fragment, el);
-            } else {
-              el.setAttribute('status', 'error');
-              el.textContent = `${response.status} ${response.statusText}`;
-            }
-          } catch (error) {
-            el.setAttribute('status', 'error');
-            el.textContent = error.message;
-          }
-      }
-  }));
-}
-
-/**
- * Strips the base URL from the given URL.
- * 
- * @param {string} href 
- * @returns {string}
- */
-function extractBaseUrl(href) {
-  return href.substring(0, href.lastIndexOf('/')) + "/";
-}
-
-/**
- * Returns an url that is relative to the given base URL.
- * 
- * @param {string} base a base URL
- * @param {string} href a URL
- * @returns href relative to base
- */
-function createUrl(base, href) {
-  if (href.startsWith('http://') || href.startsWith('https://')) {
-    return href;
-  } else if (href.startsWith('/')) {
-    return base.endsWith('/') ? base + href.substring(1) : base + href;
-  } else {
-    return base.endsWith('/') ? base + href : base + '/' + href;
-  }
-}
-
-/**
- * @returns {string} the base URL of the actual document
- */
-function getBaseUrl() {
-  const base = document.head.querySelector("base");
-  if (base) {
-    return base.href;
-  }
-  return document.URL;
 }

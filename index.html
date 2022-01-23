@@ -7,11 +7,17 @@
     <title>Candid</title>
   </head>
   <body>
+    <!--
     <my-counter></my-counter>
+    <web-import href="my-counter.html"></web-import>
+    -->
+    <my-title></my-title>
+    <my-counter></my-counter>
+    <web-import href="https://raw.githubusercontent.com/danieldietrich/--candid-web-import-2/main/components/my-title.html"></web-import>
     <web-import href="my-counter.html"></web-import>
     <script type="module">
       import candid from "./src/index.js";
-      window.addEventListener('load', () => candid());
+      window.addEventListener('load', () => candid({ debug: true }));
     </script>
   </body>
 </html>
