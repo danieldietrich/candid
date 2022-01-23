@@ -63,7 +63,7 @@ function process(baseUrl, element, elementProcessor, componentProcessor, debug) 
         return;
       }
       const { script } = processTemplate(template, elementProcessor);
-      const C = createClass(baseUrl, template, mode, props, script, componentProcessor);
+      const C = createClass(baseUrl, template, mode, props || {}, script, componentProcessor);
       customElements.define(name, C); // throws if name is already registered, see https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define#exceptions
     } catch (err) {
       console.error("[candid] Error processing web component:", elem, err);
@@ -138,8 +138,10 @@ function createClass(baseUrl, template, mode, props, script, componentProcessor)
       /** @ts-ignore @type {DocumentFragment} */
       const content = template.content.cloneNode(true);
       if (!processed) {
-        await componentProcessor(baseUrl, content);
-        processed = true;
+        componentProcessor(baseUrl, content).then(() => {
+          processed = true;
+          customElements.upgrade(this); // TODO(@@dd): are callbacks called in the correct order when upgrading this element?
+        });
       }
       root.appendChild(template.content.cloneNode(true));
       Object.defineProperty(this, __ctx, {
@@ -160,7 +162,7 @@ function createClass(baseUrl, template, mode, props, script, componentProcessor)
 
     // Called when the element is inserted into the DOM.
     connectedCallback() {
-      if (!this.isConnected) {
+      if (!this.isConnected || !processed) {
         return;
       }
       // An element might be added (connected) to and removed (disconnected) multiple times from the DOM.
@@ -191,18 +193,24 @@ function createClass(baseUrl, template, mode, props, script, componentProcessor)
 
     // Called when the element is removed from the DOM.
     disconnectedCallback() {
-      this[__ctx].onUnmount();
-      this.removeEventListener('slotchange', this[__ctx].onSlotChange);
+      if (processed) {
+        this[__ctx].onUnmount();
+        this.removeEventListener('slotchange', this[__ctx].onSlotChange);
+      }
     }
 
     // Called when an attribute is added, removed, or updated.
     attributeChangedCallback(name, oldValue, newValue) {
-      this[__ctx].onUpdate(name, oldValue, newValue);
+      if (processed) {
+        this[__ctx].onUpdate(name, oldValue, newValue);
+      }
     }
 
     // Called when the element is moved to a new document.
     adoptedCallback() {
-      this[__ctx].onAdopt();
+      if (processed) {
+        this[__ctx].onAdopt();
+      }
     }
 
   }
