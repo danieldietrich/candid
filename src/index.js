@@ -134,7 +134,7 @@ function createClass(baseUrl, template, mode, props, script, componentProcessor)
     constructor() {
       super();
       // if mode === 'closed', shadowRoot is null but root is defined!
-      const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({  mode }) : this;
+      const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this;
       /** @ts-ignore @type {DocumentFragment} */
       const content = template.content.cloneNode(true);
       if (!processed) {
@@ -224,7 +224,7 @@ function createClass(baseUrl, template, mode, props, script, componentProcessor)
  * @param {HTMLElement} target the element
  * @param {string} prop the property name
  * @param {any} defaultValue the default value
- */ 
+ */
 function createProperty(target, prop, defaultValue) {
   const propertyDescriptor = (typeof defaultValue === 'boolean') ? ({
     get() {
@@ -278,11 +278,11 @@ function createContext(element, root) {
     __uninitialized: true, // marker, will be removed in connectedCallback
     element,
     root,
-    onMount() {},
-    onUnmount() {},
-    onUpdate(name, oldValue, newValue) {},
-    onSlotChange(event) {},
-    onAdopt() {}
+    onMount() { },
+    onUnmount() { },
+    onUpdate(name, oldValue, newValue) { },
+    onSlotChange(event) { },
+    onAdopt() { }
   };
   return Object.defineProperties(context, {
     element: {
