@@ -7,13 +7,29 @@
     <title>Candid</title>
   </head>
   <body>
+    <hello-world><span slot="udc">User defined content!</span></hello-world>
     <my-title></my-title>
     <my-counter></my-counter>
-    <!-- web-import src="https://raw.githubusercontent.com/danieldietrich/--candid-web-import-2/main/components/my-title.html"></web-import-->
+    <my-counter></my-counter>
+    <web-component name="hello-world" mode="open">
+      <template>
+        <script>console.log('hello!');</script>
+        <web-import src="hello-world.css.html"></web-import>
+        <h1>Hi <human-being></human-being>!</h1>
+        <h2><slot name="udc"></slot></h2>
+        <web-component name="human-being">
+          <template>
+            <script>console.log('y\'all!');</script>
+            <web-import src="human-being.html"></web-import>
+          </template>
+        </web-component>
+      </template>
+    </web-component>
+    <web-import src="https://raw.githubusercontent.com/danieldietrich/--candid-web-import-2/main/components/my-title.html"></web-import>
     <web-import src="my-counter.html"></web-import>
     <script type="module">
       import candid from "./src/index.js";
-      window.addEventListener('load', () => candid({ debug: false }));
+      window.addEventListener('load', () => candid());
     </script>
   </body>
 </html>

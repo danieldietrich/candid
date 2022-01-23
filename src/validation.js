@@ -3,13 +3,12 @@
 /**
  * Validates the given web component attributes
  * @param {WebComponentParams} params
- * @returns true if the input parameters are valid, false otherwise
+ * @returns {string[]} a possibly empty list of validation errors
  * 
  * @typedef {{
  *   name: string | null,
  *   mode: string | null,
- *   props: any,
- *   template: HTMLTemplateElement | null
+ *   props: any
  * }} WebComponentParams
  */
 export function validate({ name, mode, props }) {
@@ -20,6 +19,9 @@ export function validate({ name, mode, props }) {
 
   (!isValidName(name))
     && result.push("Invalid custom element name: '" + name + "'. See https://candid.link/#custom-element-name");
+  
+  (customElements.get(name) !== undefined)
+    && result.push("Custom element name '" + name + "' is already registered.");
 
   (mode !== null && mode !== 'open' && mode !== 'closed')
     && result.push("Invalid shadowRoot mode: '" + mode + "'. See https://candid.link/#shadow-root-mode");
@@ -48,7 +50,7 @@ const reservedWords = [
  * Check if the given name is a valid custom element name.
  * 
  * @param {string} name
- * @return true if name is a valid custom element identifier, false otherwise
+ * @returns true if name is a valid custom element identifier, false otherwise
  */
 function isValidName(name) {
   return regexp.test(name) && !reservedWords.includes(name);
