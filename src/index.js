@@ -1,7 +1,6 @@
 // @ts-check
 
 import { getBaseUrl } from './urls';
-import { validate } from './validation';
 import { webImport } from './web-import';
 
 /**
@@ -45,11 +44,6 @@ function process(baseUrl, element, componentProcessor, elementProcessor) {
       const mode = elem.getAttribute('mode');
       const props = parseProps(elem.getAttribute('props'));
       const template = elem.querySelector('template');
-      const validationResult = validate({ name, mode, props });
-      if (validationResult.length) {
-        console.warn('[candid] validation error', validationResult, elem);
-        return;
-      }
       const C = createClass(baseUrl, template, mode, props, componentProcessor);
       customElements.define(name, C); // this triggers the instantiation of all custom elements in the document
     } catch (err) {
@@ -121,11 +115,12 @@ function createClass(baseUrl, template, mode, props, componentProcessor) {
       });
       // execute the script
       (function () { eval(script) }.bind(ctx))();
-      // We add the event listener once and don't remove it in the diconnectedCallback
+      // we add the event listener once and don't remove it in the diconnectedCallback
       // because it is possbile that contents may change in the disconnected state
       // * see slotchange event: https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement/slotchange_event
       // * see bubbling up shadow DOM events: https://javascript.info/shadow-dom-events
       this.addEventListener('slotchange', ctx.onSlotChange);
+      // call component lifecycle methods
       this.connectedCallback();
       Object.entries(props).forEach(([name, value]) =>
         this.attributeChangedCallback(name, null, value)
