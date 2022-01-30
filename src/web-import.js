@@ -12,7 +12,7 @@ import { extractBaseUrl, createUrl } from './urls';
  * @param {import('.').ComponentProcessor} componentProcessor
  * @returns {Promise<void>}
  */
-export async function webImport(baseUrl, element, componentProcessor) {
+export async function processWebImports(baseUrl, element, componentProcessor) {
   const elements = element.querySelectorAll('web-import');
   await Promise.allSettled([...elements].map(async (el) => {
     if (!el.getAttribute('status')) {
