@@ -63,7 +63,8 @@ function createClass(baseUrl, template, mode, props, componentProcessor) {
       }
       // if mode === 'closed', shadowRoot is null but root is defined!
       const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this;
-      // sthe template has been processed, so clone it and add it to the (shadow) root
+      // the template has been processed and the script has been removed,
+      // so clone it and add it to the (shadow) root
       root.appendChild(template.content.cloneNode(true));
       // the context needs to be in place before the script is executed
       const ctx = {
@@ -147,6 +148,7 @@ function createClass(baseUrl, template, mode, props, componentProcessor) {
 
 /**
  * Creates a new custom element property that reflects the attribute value.
+ * We add special handing for boolean attributes.
  * 
  * @param {HTMLElement} el the element
  * @param {string} prop the property name
