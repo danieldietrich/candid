@@ -14,7 +14,8 @@ import { call } from './functions.js';
     try {
       const name = elem.getAttribute('name');
       const mode = elem.getAttribute('mode');
-      const props = parseProps(elem.getAttribute('props'));
+      const propsStr = elem.getAttribute('props');
+      const props = propsStr ? eval('(' + propsStr + ')') : {}; // we use eval because JSON.parse is too restrictive
       const template = elem.querySelector('template');
       const C = createClass(baseUrl, template, mode, props, componentProcessor);
       customElements.define(name, C); // this triggers the instantiation of all custom elements in the document
@@ -22,19 +23,6 @@ import { call } from './functions.js';
       console.error("[candid] Error processing web component:", elem, err);
     }
   });
-}
-
-/**
- * Parses the given string into an object.
- * 
- * @param {string | null} str
- * @returns {any} the result of parsing the string
- * @throws {any} if the string cannot be evaluated
- */
-function parseProps(str) {
-  // We parse the props by using eval instead of JSON.parse, because the latter is too restrictive.
-  // The props are evaluated before connectedCallback, so they can be used in the static observedAttributes function.
-  return str ? eval('(' + str + ')') : {};
 }
 
 /**
