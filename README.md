@@ -10,7 +10,6 @@ Candid is an honest, frameworkless JavaScript library for building web applicati
 * No need to learn anything about NodeJS, just edit and run index.html
 * Builds on top of [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), but without boilerplate
 * Out-of-the-box [custom element best practices](https://developers.google.com/web/fundamentals/web-components/best-practices)
-* Name validation [according to the specification](https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name)
 * Encapsulation of DOM, style and state
 
 ## Usage
