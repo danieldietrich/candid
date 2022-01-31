@@ -131,9 +131,16 @@ function createClass(baseUrl, template, mode, props, componentProcessor) {
       call(this[__ctx]?.onUnmount);
     }
 
-    // Called when an attribute is added, removed, or updated.
+    /**
+     * Called when an attribute is added, removed, or updated.
+     * 
+     * @param {string} name
+     * @param {string | null} oldValue
+     * @param {string | null} newValue
+     */
     attributeChangedCallback(name, oldValue, newValue) {
-      call(this[__ctx]?.onUpdate, name, oldValue, newValue);
+      (newValue !== oldValue) &&
+        call(this[__ctx].onUpdate, name, oldValue, newValue);
     }
 
     // Called when the element is moved to a new document.
