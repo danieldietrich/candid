@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="description" content="Candid is an honest, frameworkless JavaScript library for building web applications.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
@@ -11,6 +12,7 @@
     <my-title></my-title>
     <my-counter></my-counter>
     <my-counter></my-counter>
+    <div is="ext-div">Loading...</div>
     <web-component name="hello-world" mode="open">
       <template>
         <script>console.log('hello!');</script>
@@ -23,6 +25,13 @@
             <web-import src="human-being.html"></web-import>
           </template>
         </web-component>
+      </template>
+    </web-component>
+    <web-component name="ext-div" extends="div">
+      <template>
+        <script>
+          this.root.innerHTML = `Hello from ${this.element.tagName}!`
+        </script>
       </template>
     </web-component>
     <web-import src="https://raw.githubusercontent.com/danieldietrich/--candid-web-import-2/main/components/my-title.html"></web-import>
