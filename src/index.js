@@ -16,7 +16,7 @@ import { processWebImports } from './web-import';
  *   elementProcessor?: ElementProcessor // process web-imported elements
  * }} Options
  * 
- * @typedef {(baseUrl: string, element: Element | DocumentFragment) => Promise<void>} ComponentProcessor
+ * @typedef {(baseUrl: string, element: Element | DocumentFragment) => Promise<void>} ComponentProcessor
  * 
  * @typedef {(element: Element | DocumentFragment) => Promise<void>} ElementProcessor
  */
