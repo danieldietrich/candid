@@ -84,9 +84,7 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
               value = this[prop];
               delete this[prop];
             }
-            // @ts-ignore
             createProperty(this, prop, defaultValue);
-            // @ts-ignore
             if (!this.hasAttribute(prop)) {
               this[prop] = value;
             }
