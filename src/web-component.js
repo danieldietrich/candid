@@ -1,4 +1,7 @@
+// @ts-check
+
 import { call } from './functions.js';
+
 /**
  * Processes web component tags by creating and registering a new custom element class.
  * 
@@ -16,9 +19,10 @@ import { call } from './functions.js';
       const mode = elem.getAttribute('mode');
       const propsStr = elem.getAttribute('props');
       const props = propsStr ? eval('(' + propsStr + ')') : {}; // we use eval because JSON.parse is too restrictive
+      const superTag = elem.getAttribute('extends');
       const template = elem.querySelector('template');
-      const C = createClass(baseUrl, template, mode, props, componentProcessor);
-      customElements.define(name, C); // this triggers the instantiation of all custom elements in the document
+      const CustomElement = createClass(baseUrl, template, mode, props, superTag, componentProcessor);
+      customElements.define(name, CustomElement, superTag ? { extends: superTag.toLocaleLowerCase() } : undefined); // this triggers the instantiation of all custom elements in the document
     } catch (err) {
       console.error("[candid] Error processing web component:", elem, err);
     }
@@ -39,13 +43,91 @@ const __ctx = Symbol();
  * @param {?HTMLTemplateElement} template 
  * @param {?string} mode shadow root mode
  * @param {?object} props default props
+ * @param {?string} superTag super html element tag name
  * @param {ComponentProcessor} componentProcessor
- * @returns a new custom element class
+ * @returns {CustomElementConstructor} a new custom element class
  */
-function createClass(baseUrl, template, mode, props, componentProcessor) {
+function createClass(baseUrl, template, mode, props, superTag, componentProcessor) {
 
   let processor;
   let script;
+
+  const superType = superTag ? document.createElement(superTag).constructor : HTMLElement;
+
+  /**
+   * document.createElement('my-element') creates a new instance of the custom element
+   * by calling this constructor.
+   * Because attributes may be added later, we need to initialize the properties lazily
+   * in the connectedCallback.
+   */
+  function CustomElement() {
+    // Same as super(), superType.call(this) does not work for custom elements.
+    // Reflect.construct returns a `self` pointer which is the same as `this`.
+    // See https://github.com/whatwg/html/issues/1704#issuecomment-241867654
+    const self = Reflect.construct(superType, [], CustomElement);
+    return self;
+  }
+
+  CustomElement.prototype = Object.create(superType.prototype, {
+    connectedCallback: {
+      /**
+       * Called when the element is inserted into the DOM.
+       */
+      value() {
+        // Lazily initialize  properties, see https://developers.google.com/web/fundamentals/web-components/best-practices#lazy-properties
+        // Properties reflect attribute values, that way cycles are prevented. If the attribute is not set, we use a default value.
+        // Caution: If both attribute and property are set, we need to bite the bullet and the attribute value is used.
+        if (!this[__ctx]) {
+          Object.entries(props).forEach(([prop, defaultValue]) => {
+            let value = defaultValue;
+            if (this.hasOwnProperty(prop)) {
+              value = this[prop];
+              delete this[prop];
+            }
+            // @ts-ignore
+            createProperty(this, prop, defaultValue);
+            // @ts-ignore
+            if (!this.hasAttribute(prop)) {
+              this[prop] = value;
+            }
+          });
+          initialize.bind(this)();
+        }
+        call(this[__ctx]?.onMount);
+      }
+    },
+    disconnectedCallback: {
+      /**
+       * Called when the element is inserted into the DOM.
+       */
+      value() { call(this[__ctx]?.onUnmount); }
+    },
+    attributeChangedCallback: {
+      /**
+       * Called when an attribute is added, removed, or updated.
+       *
+       * @param {string} name
+       * @param {string | null} oldValue
+       * @param {string | null} newValue
+       */
+      value(name, oldValue, newValue) {
+        (newValue !== oldValue) &&
+          call(this[__ctx]?.onUpdate, name, oldValue, newValue);
+      }
+    },
+    adoptedCallback: {
+      /**
+       * Called when the element is moved to a new document.
+       */
+      value() { call(this[__ctx]?.onAdopt); }
+    }
+  });
+
+  // define static method
+  CustomElement.observedAttributes = Object.keys(props);
+
+  // @ts-ignore (the compiler does not know that we use prototype based inheritance)
+  return CustomElement;
 
   async function initialize() {
     if (template) {
@@ -65,7 +147,8 @@ function createClass(baseUrl, template, mode, props, componentProcessor) {
       const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this;
       // the template has been processed and the script has been removed,
       // so clone it and add it to the (shadow) root
-      root.appendChild(template.content.cloneNode(true));
+      const content = template.content.cloneNode(true);
+      root.appendChild(content);
       // the context needs to be in place before the script is executed
       const ctx = {
         element: this,
@@ -88,69 +171,6 @@ function createClass(baseUrl, template, mode, props, componentProcessor) {
       );
     }
   }
-
-  class C extends HTMLElement {
-
-    /**
-     * document.createElement('my-element') creates a new instance of the custom element
-     * by calling this constructor.
-     * Because attributes may be added later, we need to initialize the properties lazily
-     * in the connectedCallback.
-     */
-    constructor() {
-      super();
-      // Lazily initialize  properties, see https://developers.google.com/web/fundamentals/web-components/best-practices#lazy-properties
-      // Properties reflect attribute values, that way cycles are prevented. If the attribute is not set, we use a default value.
-      // Caution: If both attribute and property are set, we need to bite the bullet and the attribute value is used.
-      Object.entries(props).forEach(([prop, defaultValue]) => {
-        let value = defaultValue;
-        if (this.hasOwnProperty(prop)) {
-          value = this[prop];
-          delete this[prop];
-        }
-        createProperty(this, prop, defaultValue);
-        if (!this.hasAttribute(prop)) {
-          this[prop] = value;
-        }
-      });
-      // perform lazy initialization
-      initialize.bind(this)();
-    }
-
-    static get observedAttributes() {
-      return Object.keys(props);
-    }
-
-    // Called when the element is inserted into the DOM.
-    connectedCallback() {
-      call(this[__ctx]?.onMount);
-    }
-
-    // Called when the element is removed from the DOM.
-    disconnectedCallback() {
-      call(this[__ctx]?.onUnmount);
-    }
-
-    /**
-     * Called when an attribute is added, removed, or updated.
-     * 
-     * @param {string} name
-     * @param {string | null} oldValue
-     * @param {string | null} newValue
-     */
-    attributeChangedCallback(name, oldValue, newValue) {
-      (newValue !== oldValue) &&
-        call(this[__ctx].onUpdate, name, oldValue, newValue);
-    }
-
-    // Called when the element is moved to a new document.
-    adoptedCallback() {
-      call(this[__ctx]?.onAdopt);
-    }
-
-  }
-
-  return C;
 }
 
 /**
