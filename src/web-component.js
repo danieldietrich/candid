@@ -12,17 +12,20 @@ import { call } from './functions.js';
  * 
  * @typedef {import('.').ComponentProcessor} ComponentProcessor
  */
- export function processWebComponents(baseUrl, element, componentProcessor) {
+export function processWebComponents(baseUrl, element, componentProcessor) {
   element.querySelectorAll("web-component").forEach(elem => {
     try {
       const name = elem.getAttribute('name');
       const mode = elem.getAttribute('mode');
       const propsStr = elem.getAttribute('props');
       const props = propsStr ? eval('(' + propsStr + ')') : {}; // we use eval because JSON.parse is too restrictive
-      const superTag = elem.getAttribute('extends');
+      const superTag = elem.getAttribute('extends')?.toLocaleLowerCase();
       const template = elem.querySelector('template');
+      // dynamically creates a custom element class based on the <web-component> declaration
       const CustomElement = createClass(baseUrl, template, mode, props, superTag, componentProcessor);
-      customElements.define(name, CustomElement, superTag ? { extends: superTag.toLocaleLowerCase() } : undefined); // this triggers the instantiation of all custom elements in the document
+      // this triggers the instantiation of all custom elements in the document
+      const options = superTag ? { extends: superTag } : undefined;
+      customElements.define(name, CustomElement, options);
     } catch (err) {
       console.error("[candid] Error processing web component:", elem, err);
     }
