@@ -1,6 +1,5 @@
 // @ts-check
 
-import { call } from './functions';
 import { getBaseUrl } from './urls';
 import { processWebComponents } from './web-component';
 import { processWebImports } from './web-import';
@@ -24,7 +23,7 @@ export default async function(options) {
   const { elementProcessor } = Object.assign({}, options);
   /** @type {ComponentProcessor} */
   const componentProcessor = async (baseUrl, element) => {
-    call(elementProcessor, element);
+    elementProcessor && elementProcessor(element);
     processWebComponents(baseUrl, element, componentProcessor);   
     await processWebImports(baseUrl, element, componentProcessor);
   };

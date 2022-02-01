@@ -1,7 +1,5 @@
 // @ts-check
 
-import { call } from './functions.js';
-
 /**
  * Processes web component tags by creating and registering a new custom element class.
  * 
@@ -94,14 +92,14 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
           });
           initialize.bind(this)();
         }
-        call(this[__ctx]?.onMount);
+        this[__ctx]?.onMount?.call(this[__ctx]);
       }
     },
     disconnectedCallback: {
       /**
        * Called when the element is inserted into the DOM.
        */
-      value() { call(this[__ctx]?.onUnmount); }
+      value() { this[__ctx]?.onUnmount?.call(this[__ctx]); }
     },
     attributeChangedCallback: {
       /**
@@ -113,14 +111,14 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
        */
       value(name, oldValue, newValue) {
         (newValue !== oldValue) &&
-          call(this[__ctx]?.onUpdate, name, oldValue, newValue);
+          this[__ctx]?.onUpdate?.call(this[__ctx], name, oldValue, newValue);
       }
     },
     adoptedCallback: {
       /**
        * Called when the element is moved to a new document.
        */
-      value() { call(this[__ctx]?.onAdopt); }
+      value() { this[__ctx]?.onAdopt?.call(this[__ctx]); }
     }
   });
 
