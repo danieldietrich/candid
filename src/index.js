@@ -1,6 +1,5 @@
 // @ts-check
 
-import { getBaseUrl } from './urls';
 import { processWebComponents } from './web-component';
 import { processWebImports } from './web-import';
 
@@ -27,5 +26,6 @@ export default async function(options) {
     processWebComponents(baseUrl, element, componentProcessor);   
     await processWebImports(baseUrl, element, componentProcessor);
   };
-  await componentProcessor(getBaseUrl(), document);
+  const baseUrl = document.head.querySelector("base")?.href || document.URL;
+  await componentProcessor(baseUrl, document);
 }

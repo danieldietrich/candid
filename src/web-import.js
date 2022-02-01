@@ -1,7 +1,5 @@
 // @ts-check
 
-import { extractBaseUrl, createUrl } from './urls';
-
 /**
  * High-level web import functionality.
  * The contents of the web import element are imported and inserted into the DOM.
@@ -19,12 +17,12 @@ export async function processWebImports(baseUrl, element, componentProcessor) {
       el.setAttribute('status', 'loading');
       try {
         const link = el.getAttribute('src');
-        const resourceUrl = createUrl(baseUrl, link);
+        const resourceUrl = new URL(link, baseUrl).toString();
         const response = await fetch(resourceUrl);
         if (response.ok) {
           const content = await response.text();
           const fragment = document.createRange().createContextualFragment(content);
-          const newBaseUrl = extractBaseUrl(resourceUrl);
+          const newBaseUrl = resourceUrl.substring(0, resourceUrl.lastIndexOf('/')) + "/";
           // recurse before connecting the fragment to the live DOM
           await componentProcessor(newBaseUrl, fragment);
           el.parentNode.replaceChild(fragment, el);
