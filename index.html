@@ -8,11 +8,17 @@
     <title>Candid</title>
   </head>
   <body>
-    <hello-world><span slot="udc">User defined content!</span></hello-world>
-    <my-title></my-title>
-    <my-counter></my-counter>
-    <my-counter></my-counter>
-    <div is="ext-div">Loading...</div>
+    <!-- best practice: use a web component as root for the content in order to reduce FOUC -->
+    <app-content></app-content>
+    <web-component name="app-content">
+      <template>
+        <hello-world><span slot="udc">User defined content!</span></hello-world>
+        <my-title></my-title>
+        <my-counter></my-counter>
+        <my-counter></my-counter>
+        <div is="ext-div">Loading...</div>
+      </template>
+    </web-component>
     <web-component name="hello-world" mode="open">
       <template>
         <script>console.log('hello!');</script>

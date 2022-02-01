@@ -23,7 +23,7 @@ export default async function(options) {
   /** @type {ComponentProcessor} */
   const componentProcessor = async (baseUrl, element) => {
     elementProcessor && elementProcessor(element);
-    processWebComponents(baseUrl, element, componentProcessor);   
+    processWebComponents(baseUrl, element, componentProcessor);
     await processWebImports(baseUrl, element, componentProcessor);
   };
   const baseUrl = document.head.querySelector("base")?.href || document.URL;
