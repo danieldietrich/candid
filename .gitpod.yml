@@ -1,6 +1,6 @@
 tasks:
   - before: curl gitprompt.sh/install | sh
-    init: . ~/.gitprompt ; npm i
+    init: npm i
     command: npm run dev:gitpod
 ports:
   - port: 3000
