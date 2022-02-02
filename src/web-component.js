@@ -115,6 +115,9 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
   }
 
   CustomElement.prototype = Object.create(superType.prototype, {
+    constructor: {
+      value: CustomElement
+    },
     connectedCallback: {
       /**
        * Called when the element is inserted into the DOM.
@@ -156,7 +159,9 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
   });
 
   // define static method
-  CustomElement.observedAttributes = Object.keys(props);
+  Object.defineProperty(CustomElement, 'observedAttributes', {
+    value: Object.keys(props)
+  });
 
   // @ts-ignore (the compiler does not know that we use prototype based inheritance)
   return CustomElement;

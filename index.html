@@ -6,6 +6,8 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
+    <!-- support for customized built-in elements (especially for Safari -->
+    <script src="//cdn.jsdelivr.net/npm/@ungap/custom-elements"></script>
   </head>
   <body>
     <!-- best practice: use a web component as root for the content in order to reduce FOUC -->
@@ -17,8 +19,8 @@
         <my-title></my-title>
         <my-counter></my-counter>
         <my-counter></my-counter>
-        <div is="ext-div">Loading...</div>
         <no-template></no-template>
+        <div is="ext-div">Loading...</div>
       </template>
     </web-component>
     <web-component name="no-template"></web-component>
