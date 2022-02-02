@@ -6,10 +6,11 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
-    <script type="module" crossorigin src="/assets/index.27a7f80c.js"></script>
+    <script type="module" crossorigin src="/assets/index.392dc707.js"></script>
   </head>
   <body>
     <!-- best practice: use a web component as root for the content in order to reduce FOUC -->
+    <!-- also: don't use slots to prevent FOUC -->
     <app-content></app-content>
     <web-component name="app-content">
       <template>
@@ -18,8 +19,10 @@
         <my-counter></my-counter>
         <my-counter></my-counter>
         <div is="ext-div">Loading...</div>
+        <no-template></no-template>
       </template>
     </web-component>
+    <web-component name="no-template"></web-component>
     <web-component name="hello-world" mode="open">
       <template>
         <script>console.log('hello!');</script>
