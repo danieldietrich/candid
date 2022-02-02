@@ -21,7 +21,7 @@ export function processWebComponents(baseUrl, element, componentProcessor) {
       const template = elem.querySelector('template');
       // dynamically creates a custom element class based on the <web-component> declaration
       const CustomElement = createClass(baseUrl, template, mode, props, superTag, componentProcessor);
-      // this triggers the instantiation of all custom elements in the document
+      // trigger instantiation of custom elements ${name} in the document
       const options = superTag ? { extends: superTag } : undefined;
       customElements.define(name, CustomElement, options);
     } catch (err) {
@@ -31,15 +31,32 @@ export function processWebComponents(baseUrl, element, componentProcessor) {
 }
 
 /**
- * The internal element property that is used to store the component's context,
+ * The internal element property this[__ctx] that is used to store the web component's context,
  * consisting of state and lifecycle methods.
  * The context is altered by user defined script tags in the template.
+ *
+ * @typedef {{
+ *   element: HTMLElement
+ *   root: HTMLElement
+ *   onMount?: () => void
+ *   onUnmount?: () => void
+ *   onUpdate?: (name: string, oldValue: string | null, newValue: string | null) => void
+ *   onAdapted?: () => void
+ *   onSlotChange?: () => void
+ * }} WebComponentContext
  */
 const __ctx = Symbol();
 
 /**
+ * The initialization state of the web component this[__ready] is undefined, false or true.
+ *
+ * @typedef {string | undefined} WebComponentState
+ */
+const __ready = Symbol();
+
+/**
  * Creates a new custom element class from the given template.
- * 
+ *
  * @param {string} baseUrl the base path
  * @param {?HTMLTemplateElement} template 
  * @param {?string} mode shadow root mode
@@ -50,9 +67,22 @@ const __ctx = Symbol();
  */
 function createClass(baseUrl, template, mode, props, superTag, componentProcessor) {
 
+  /**
+   * The web component template processor is lazily loading web imports.
+   * @type {Promise | true | undefined}
+   */
   let processor;
+
+  /**
+   * The script is extracted from the template and evaluated on web component instantiation.
+   * @type {string | undefined}
+   */
   let script;
 
+  /**
+   * The super type of the web component.
+   */
+  // TODO(@@dd): add validation that superType not instanceof HTMLUnknownElement
   const superType = superTag ? document.createElement(superTag).constructor : HTMLElement;
 
   /**
@@ -66,6 +96,17 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
     // Reflect.construct returns a `self` pointer which is the same as `this`.
     // See https://github.com/whatwg/html/issues/1704#issuecomment-241867654
     const self = Reflect.construct(superType, [], CustomElement);
+    if (!processor && template) {
+      // start to lazily load web-imports before the component is connected to the DOM
+      processor = componentProcessor(baseUrl, template.content);
+    }
+    // if mode === 'closed', shadowRoot is null but root is defined!
+    const root = (mode === 'open' || mode === 'closed') ? self.attachShadow({ mode }) : self;
+    /** @type {WebComponentContext} */
+    self[__ctx] = {
+      element: self,
+      root
+    };
     return self;
   }
 
@@ -75,31 +116,16 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
        * Called when the element is inserted into the DOM.
        */
       value() {
-        // Lazily initialize  properties, see https://developers.google.com/web/fundamentals/web-components/best-practices#lazy-properties
-        // Properties reflect attribute values, that way cycles are prevented. If the attribute is not set, we use a default value.
-        // Caution: If both attribute and property are set, we need to bite the bullet and the attribute value is used.
-        if (!this[__ctx]) {
-          Object.entries(props).forEach(([prop, defaultValue]) => {
-            let value = defaultValue;
-            if (this.hasOwnProperty(prop)) {
-              value = this[prop];
-              delete this[prop];
-            }
-            createProperty(this, prop, defaultValue);
-            if (!this.hasAttribute(prop)) {
-              this[prop] = value;
-            }
-          });
-          initialize.bind(this)();
-        }
-        this[__ctx]?.onMount?.call(this[__ctx]);
+        (this[__ready] === undefined) ? initialize(this) : (this[__ready] && this[__ctx].onMount?.call(this[__ctx]));
       }
     },
     disconnectedCallback: {
       /**
        * Called when the element is inserted into the DOM.
        */
-      value() { this[__ctx]?.onUnmount?.call(this[__ctx]); }
+      value() {
+        this[__ready] && this[__ctx].onUnmount?.call(this[__ctx]);
+      }
     },
     attributeChangedCallback: {
       /**
@@ -110,15 +136,16 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
        * @param {string | null} newValue
        */
       value(name, oldValue, newValue) {
-        (newValue !== oldValue) &&
-          this[__ctx]?.onUpdate?.call(this[__ctx], name, oldValue, newValue);
+        this[__ready] && (newValue !== oldValue) && this[__ctx].onUpdate?.call(this[__ctx], name, oldValue, newValue);
       }
     },
     adoptedCallback: {
       /**
        * Called when the element is moved to a new document.
        */
-      value() { this[__ctx]?.onAdopt?.call(this[__ctx]); }
+      value() {
+        this[__ready] && this[__ctx].onAdopt?.call(this[__ctx]);
+      }
     }
   });
 
@@ -128,48 +155,79 @@ function createClass(baseUrl, template, mode, props, superTag, componentProcesso
   // @ts-ignore (the compiler does not know that we use prototype based inheritance)
   return CustomElement;
 
-  async function initialize() {
+  /**
+   * The initialization of the web component should run only once.
+   *
+   * @param {*} element
+   */
+  async function initialize(element) {
+    element[__ready] = false; // false prevents reentrance
+    const ctx = element[__ctx];
+    initializeProperties(element);
     if (template) {
-      if (!processor) {
-        // the first instance will trigger lazy instantiation
-        processor = componentProcessor(baseUrl, template.content);
-      }
-      // all instances will wait for the component to be processed
-      await processor;
-      // remove the script from the template before cloning the template
-      if (!script) {
-        script = [...template.content.querySelectorAll("script")].map(s =>
-          s.parentNode.removeChild(s).textContent
-        ).join(';\n'); // add semicollon to avoid syntax ambiguities when joining multiple scripts
-      }
-      // if mode === 'closed', shadowRoot is null but root is defined!
-      const root = (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this;
-      // the template has been processed and the script has been removed,
-      // so clone it and add it to the (shadow) root
-      const content = template.content.cloneNode(true);
-      root.appendChild(content);
-      // the context needs to be in place before the script is executed
-      const ctx = {
-        element: this,
-        root
-      };
-      Object.defineProperty(this, __ctx, {
-        value: ctx
-      });
-      // execute the script
-      (function () { eval(script) }.bind(ctx))();
-      // we add the event listener once and don't remove it in the diconnectedCallback
-      // because it is possbile that contents may change in the disconnected state
-      // * see slotchange event: https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement/slotchange_event
-      // * see bubbling up shadow DOM events: https://javascript.info/shadow-dom-events
-      this.addEventListener('slotchange', ctx.onSlotChange);
-      // call component lifecycle methods
-      this.connectedCallback();
-      Object.entries(props).forEach(([name, value]) =>
-        this.attributeChangedCallback(name, null, value)
-      );
+      await processor; processor = true; // all instances will wait for the component to be processed
+      processTemplate(template, ctx);
     }
+    registerListeners(ctx, element); // even if there are no children (aka template), the element might be interested in events
+    element[__ready] = true; // fully initialized
+    // call custom element lifecycle methods, they will delegate now to the ctx lifecycle methods
+    element.connectedCallback();
+    Object.entries(props).forEach(([name, value]) =>
+      element.attributeChangedCallback(name, null, value)
+    );
   }
+
+  // Lazily initialize  properties, see https://developers.google.com/web/fundamentals/web-components/best-practices#lazy-properties
+  // Properties reflect attribute values, that way cycles are prevented. If the attribute is not set, we use a default value.
+  // Caution: If both attribute and property are set, we need to bite the bullet and the attribute value is used.
+  function initializeProperties(element) {
+    Object.entries(props).forEach(([prop, defaultValue]) => {
+      let value = defaultValue;
+      if (element.hasOwnProperty(prop)) {
+        value = element[prop];
+        delete element[prop];
+      }
+      createProperty(element, prop, defaultValue);
+      if (!element.hasAttribute(prop)) {
+        element[prop] = value;
+      }
+    });
+  }
+
+  /**
+   * Clone template to (shadow) root and run scripts.
+   *
+   * @param {HTMLTemplateElement} template
+   * @param {WebComponentContext} ctx
+   */
+  function processTemplate(template, ctx) {
+    // remove the script from the template before cloning the template
+    if (script === undefined) {
+      script = [...template.content.querySelectorAll("script")].map(s =>
+        s.parentNode.removeChild(s).textContent
+      ).join(';\n'); // add semicollon to avoid syntax ambiguities when joining multiple scripts
+    }
+    // the template has been processed and the script has been removed, it is ready to be cloned
+    const content = template.content.cloneNode(true);
+    ctx.root.appendChild(content);
+    // execute the script
+    (function () { eval(script) }.bind(ctx))();
+  }
+
+  /**
+   * Register custom element event listeners.
+   *
+   * @param {*} ctx
+   * @param {*} element
+   */
+  function registerListeners(ctx, element) {
+    // we add the event listener once and don't remove it in the diconnectedCallback
+    // because it is possbile that contents may change in the disconnected state
+    // * see slotchange event: https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement/slotchange_event
+    // * see bubbling up shadow DOM events: https://javascript.info/shadow-dom-events
+    ctx.onSlotChange && element.addEventListener('slotchange', ctx.onSlotChange);
+  }
+
 }
 
 /**

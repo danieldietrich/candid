@@ -9,6 +9,7 @@
   </head>
   <body>
     <!-- best practice: use a web component as root for the content in order to reduce FOUC -->
+    <!-- also: don't use slots to prevent FOUC -->
     <app-content></app-content>
     <web-component name="app-content">
       <template>
@@ -17,8 +18,10 @@
         <my-counter></my-counter>
         <my-counter></my-counter>
         <div is="ext-div">Loading...</div>
+        <no-template></no-template>
       </template>
     </web-component>
+    <web-component name="no-template"></web-component>
     <web-component name="hello-world" mode="open">
       <template>
         <script>console.log('hello!');</script>

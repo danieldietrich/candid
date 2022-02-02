@@ -22,6 +22,7 @@ export default async function(options) {
   const { elementProcessor } = Object.assign({}, options);
   /** @type {ComponentProcessor} */
   const componentProcessor = async (baseUrl, element) => {
+    // TODO(@@dd): we want to first perform web imports and then define web components to prevent FOUC
     elementProcessor && elementProcessor(element);
     processWebComponents(baseUrl, element, componentProcessor);
     await processWebImports(baseUrl, element, componentProcessor);
