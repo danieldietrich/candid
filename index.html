@@ -6,6 +6,17 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Candid</title>
+    <style>
+      *:not(:defined) {
+        display: inline-block;
+        height: 10vh;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+      web-component, web-import {
+        display: none !important;
+      }
+    </style>
     <!-- support for customized built-in elements (especially for Safari -->
     <script src="//cdn.jsdelivr.net/npm/@ungap/custom-elements"></script>
   </head>
@@ -23,10 +34,14 @@
         <div is="ext-div">Loading...</div>
       </template>
     </web-component>
+    <!-- it is possible to have web components without content -->
+    <!-- however, it will have a (shadow) root and a __ctx -->
     <web-component name="no-template"></web-component>
+    <!-- web components can have sub-web-components -->
     <web-component name="hello-world" mode="open">
       <template>
         <script>console.log('hello!');</script>
+        <!-- it is possible to load css using a web import but the recommended way is to use style's @import -->
         <web-import src="hello-world.css.html"></web-import>
         <h1>Hi <human-being></human-being>!</h1>
         <h2><em><slot name="udc"></slot></em></h2>
@@ -47,6 +62,17 @@
     </web-component>
     <web-import src="https://raw.githubusercontent.com/danieldietrich/--candid-web-import-2/main/components/my-title.html"></web-import>
     <web-import src="my-counter.html"></web-import>
+    <no-web-import></no-web-import>
+    <web-component name="no-web-import">
+      <template>
+        <style>
+          @import 'test.css';
+        </style>
+        <script src="test.js"></script>
+        <h1>Hello Daniel!</h1>
+      </template>
+    </web-component>
+    <!-- the template content is processed before connecting it to the live DOM -->
     <script type="module">
       import candid from "./src/index.js";
       window.addEventListener('load', () => candid());
