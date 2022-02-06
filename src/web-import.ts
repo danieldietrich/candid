@@ -8,21 +8,25 @@ export class WebImport extends HTMLElement {
 }
 
 export async function webImport(e: Element) {
-    const url = createUrl(e.getAttribute('src'));
-    const response = await fetch(url);
-    if (response.ok) {
-        const content = await response.text();
-        const fragment = document.createRange().createContextualFragment(content);
-        const newBaseUrl = url.substring(0, url.lastIndexOf('/')) + '/';
-        fragment.querySelectorAll('template').forEach(t => {
-            t.content.querySelectorAll('web-import').forEach(e => {
-                const src = createUrl(e.getAttribute('src'), newBaseUrl);
-                e.setAttribute('src', src);
+    try {
+        const url = createUrl(e.getAttribute('src'));
+        const response = await fetch(url);
+        if (response.ok) {
+            const content = await response.text();
+            const fragment = document.createRange().createContextualFragment(content);
+            const newBaseUrl = url.substring(0, url.lastIndexOf('/')) + '/';
+            fragment.querySelectorAll('template').forEach(t => {
+                t.content.querySelectorAll('web-import').forEach(e => {
+                    const src = createUrl(e.getAttribute('src'), newBaseUrl);
+                    e.setAttribute('src', src);
+                });
             });
-        });
-        e.parentNode?.replaceChild(fragment, e);
-    } else {
-        console.error(e, response.status, await response.text());
+            e.parentNode?.replaceChild(fragment, e);
+        } else {
+            console.error('[candid] web-import http error ', response.status + '\n', await response.text(), '\n', e);
+        }
+    } catch (err) {
+        console.error('[candid] web-import network error:', err, '\n', e);
     }
 }
 

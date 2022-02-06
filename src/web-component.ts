@@ -56,10 +56,14 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
             };
             if (init === undefined) {
                 init = new Promise(async (resolve) => {
-                    await Promise.all(Array.from(template.content.querySelectorAll('web-import')).map(e => webImport(e)));
-                    const script = Array.from(template.content.querySelectorAll('script')).map(s =>
-                        s.parentNode?.removeChild(s).textContent
-                    ).join(';\n'); // add semicollon to avoid syntax ambiguities when joining multiple scripts
+                    const { content } = template;
+                    await Promise.all(Array.from(template.content.querySelectorAll('web-import')).map(
+                        e => webImport(e))
+                    );
+                    const scripts = Array.from(template.content.querySelectorAll('script:not([src])')).map(
+                        e => e.parentNode?.removeChild(e).textContent
+                    );
+                    const script = '{' + scripts.join('}{') + '}'; // add semicollon to avoid syntax ambiguities when joining multiple scripts
                     resolve({ script });
                 });
             }
@@ -78,8 +82,14 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
                 // make content available in the live DOM
                 const content = template.content.cloneNode(true);
                 this.ctx.root.appendChild(content);
-                // now the script has all it needs
-                (function () { eval(script) }).call(this.ctx);
+                // now the script has all it needs (we just let it crash in the case of errors)
+                (function () {
+                    try {
+                        eval(script)
+                    } catch (err) {
+                        console.error('[candid] error executing script of web component \'' + name + '\'\n', err, '\n', script);
+                    }
+                }).call(this.ctx);
                 // the script has registered its lifecycle callbacks, now we can make use of them
                 this.ctx.onSlotChange && this.ctx.element.addEventListener('slotchange', () => this.ctx.onSlotChange?.call(this.ctx));
                 this.ctx.onMount?.call(this.ctx);
