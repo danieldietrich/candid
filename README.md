@@ -2,7 +2,7 @@
 
 ![Candid](./public/candid.svg)
 
-Candid is an honest, frameworkless JavaScript library for building web applications.
+Candid is an unopinionated, frameworkless JavaScript library for building web applications.
 
 ## Features
 
