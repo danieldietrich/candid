@@ -3,10 +3,11 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="description"
-    content="Candid is an honest, frameworkless JavaScript library for building web applications.">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="description" content="Candid is an honest, frameworkless JavaScript library for building web applications.">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="white">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="black">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <title>Candid</title>
   <style>
     *:not(:defined) {
@@ -16,9 +17,14 @@
       transition: opacity 0.3s ease-in-out;
     }
   </style>
-  <!-- support for customized built-in elements (especially for Safari -->
-  <script src="//cdn.jsdelivr.net/npm/@ungap/custom-elements"></script>
-  <script type="module" crossorigin src="/assets/index.79246d9f.js"></script>
+  <script>
+    if (navigator.vendor.match(/apple/i)) {
+        const script = document.createElement('script');
+        script.src = "//cdn.jsdelivr.net/npm/@ungap/custom-elements";
+        document.head.appendChild(script);
+    }
+  </script>
+  <script type="module" crossorigin src="/assets/index.cdd90105.js"></script>
 </head>
 
 <body>
