@@ -10,7 +10,7 @@ Alternatively, you can clone the repository locally, `npm install` the dependenc
 
 The project basically consists of two main parts:
 
-* `src/index.js`: the main library
+* `src/index.ts`: the main library
 * `index.html`: the main web page (uses static assets located in `public/`)
 
 ## Building
