@@ -73,3 +73,15 @@ Candid is an honest, frameworkless JavaScript library for building web applicati
     <hello-world greeting="Hi ya'all!" />
 </body>
 ```
+
+## Safari support for customized built-in elements
+
+Web components work in all major browsers and Candid can be used without any hassles.
+
+Safari [does need a polyfill](https://caniuse.com/mdn-api_customelementregistry_builtin) for [customized built-in elements](https://html.spec.whatwg.org/multipage/custom-elements.html#custom-elements-customized-builtin-example).
+
+**Solution:** add the following script to the the HTML `<head>` element.
+
+```html
+<script src="//cdn.jsdelivr.net/npm/@ungap/custom-elements"></script>
+```
