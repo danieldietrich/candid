@@ -1,11 +1,18 @@
 import { webImport } from "./web-import";
 
 /**
- * WebComponent declares the customized built-in element <template is='web-component'>.
+ * WebComponent declares the customized built-in element <web-component>.
  */
-export class WebComponent extends HTMLTemplateElement {
+export class WebComponent extends HTMLElement {
+    constructor() {
+        super();
+        this.style.display = 'none';
+    }
     connectedCallback() {
-        createCustomElement(this, ...['name', 'extends', 'mode', 'props'].map(a => this.getAttribute(a)) as Args);
+        const template = this.querySelector('template');
+        if (template) {
+            createCustomElement(template, ...['name', 'extends', 'mode', 'props'].map(a => this.getAttribute(a)) as Args);
+        }
     }
 }
 

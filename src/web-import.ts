@@ -2,6 +2,10 @@
  * WebImport declares the autonomous custom element <web-import>.
  */
 export class WebImport extends HTMLElement {
+    constructor() {
+        super();
+        this.style.display = 'none';
+    }
     connectedCallback() {
         webImport(this);
     }

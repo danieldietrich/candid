@@ -37,40 +37,48 @@
   <div is="ext-div">Loading...</div>
   <!-- it is possible to have web components without content -->
   <!-- however, it will have a (shadow) root and a __ctx -->
-  <template is="web-component" name="no-template"></template>
+  <web-component name="no-template"></web-component>
   <!-- web components can have sub-web-components (don't do that) -->
-  <template is="web-component" name="hello-world" mode="open">
-    <script>console.log('hello!');</script>
-    <!-- it is possible to load css using a web import but the recommended way is to use style's @import -->
-    <web-import src="hello-world.css.html"></web-import>
-    <h1>Hi <human-being></human-being>!</h1>
-    <h2>
-      <em>
-        <slot name="udc"></slot>
-      </em>
-    </h2>
-    <template is="web-component" name="human-being">
-      <script>console.log('y\'all!');</script>
-      <web-import src="human-being.html"></web-import>
+  <web-component name="hello-world" mode="open">
+    <template>
+      <script>console.log('hello!');</script>
+      <!-- it is possible to load css using a web import but the recommended way is to use style's @import -->
+      <web-import src="hello-world.css.html"></web-import>
+      <h1>Hi <human-being></human-being>!</h1>
+      <h2>
+        <em>
+          <slot name="udc"></slot>
+        </em>
+      </h2>
+      <web-component name="human-being">
+        <template>
+          <script>console.log('y\'all!');</script>
+          <web-import src="human-being.html"></web-import>
+        </template>
+      </web-component>
+      </template>
+  </web-component>
+  <web-component name="ext-div" extends="div">
+    <template>
+      <script>
+        this.root.innerHTML = `Hello from ${this.element.tagName}!`
+      </script>
     </template>
-  </template>
-  <template is="web-component" name="ext-div" extends="div">
-    <script>
-      this.root.innerHTML = `Hello from ${this.element.tagName}!`
-    </script>
-  </template>
+  </web-component>
   <web-import
     src="https://raw.githubusercontent.com/danieldietrich/--candid-web-import-2/main/components/my-title.html">
   </web-import>
   <web-import src="my-counter.html"></web-import>
   <no-web-import></no-web-import>
-  <template is="web-component" name="no-web-import">
-    <style>
-      @import 'test.css';
-    </style>
-    <script src="./test.js"></script>
-    <h1>Hello Daniel!</h1>
-  </template>
+  <web-component name="no-web-import">
+    <template>
+      <style>
+        @import 'test.css';
+      </style>
+      <script src="./test.js"></script>
+      <h1>Hello Daniel!</h1>
+    </template>
+  </web-component>
   <!-- the template content is processed before connecting it to the live DOM -->
   <script type="module" src="./src/index.ts"></script>
 </body>
