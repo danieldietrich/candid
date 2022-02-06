@@ -19,15 +19,9 @@ Candid is an honest, frameworkless JavaScript library for building web applicati
 ```html
 <!-- umd package -->
 <script src="https://cdn.jsdelivr.net/npm/candid"></script>
-<script>
-  window.addEventListener('load', () => candid());
-</script>
 
 <!-- alternative: modern javascript -->
-<script type="module">
-  import candid from 'https://esm.run/candid';
-  window.addEventListener('load', () => candid());
-</script>
+<script type="module" src="https://esm.run/candid"></script>
 ```
 
 2. Define your web components
