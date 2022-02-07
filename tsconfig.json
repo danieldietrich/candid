@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "rootDir": "./src",
-    "outFile": "./dist/candid",
-    "lib": ["ES2015", "DOM"],
-    "strict": true,
-    "skipLibCheck": true
+    "target": "ES2015",           // emitted JavaScript version
+    "declaration": true,          // generate declarations *.d.ts
+    "emitDeclarationOnly": true,  // generate only declarations *.d.ts (we use vite to build the *.js files)
+    "isolatedModules": true,      // this way we get a clean index.d.ts that only contains the public API of Candid
+    "rootDir": "./src",           // source folder
+    "outDir": "./dist",           // *.d.ts goes here
+    "lib": ["ES2015", "DOM"],     // the target runtime environment
+    "strict": true,               // enable all strict type-checking options
+    "skipLibCheck": true          // skip type checking all .d.ts files
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
