@@ -42,6 +42,9 @@ type Init = {
     script: string
 }
 
+// used to protect the context property key of web-components
+const ctx = Symbol();
+
 /**
  * Creates a custom element.
  */
@@ -53,14 +56,14 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
     const props: Props = propsStr ? eval('(' + propsStr + ')') : {};
     let init: Promise<Init>;
     class CustomElement extends superType {
-        private readonly ctx: Context;
-        private ready = false;
         constructor() {
             super();
-            this.ctx = {
+            Object.defineProperty(this, ctx, {
+              value: {
                 element: this,
                 root: (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this
-            };
+              }
+            });
             if (init === undefined) {
                 init = new Promise(async (resolve) => {
                     const { content } = template;
@@ -79,8 +82,9 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
             return Object.keys(props);
         }
         async connectedCallback() {
-            if (this.ready) {
-                this.ctx.onMount?.call(this.ctx);
+            const ready = Object.isFrozen((this as any)[ctx]);
+            if (ready) {
+                (this as any)[ctx].onMount?.call((this as any)[ctx]);
             } else {
                 // wait for lazy initialization of web-imorts and scripts
                 const { script } = await init;
@@ -88,7 +92,7 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
                 initializeProperties(this, props);
                 // make content available in the live DOM
                 const content = template.content.cloneNode(true);
-                this.ctx.root.appendChild(content);
+                (this as any)[ctx].root.appendChild(content);
                 // now the script has all it needs (we just let it crash in the case of errors)
                 (function () {
                     try {
@@ -96,23 +100,22 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
                     } catch (err) {
                         console.error('[candid] error executing script of web component \'' + name + '\'\n', err, '\n', script);
                     }
-                }).call(this.ctx);
+                }).call((this as any)[ctx]);
+                Object.freeze((this as any)[ctx]); // frozen indicates ready-state of this web-component
                 // the script has registered its lifecycle callbacks, now we can make use of them
-                this.ctx.onSlotChange && this.ctx.element.addEventListener('slotchange', () => this.ctx.onSlotChange?.call(this.ctx));
-                this.ctx.onMount?.call(this.ctx);
-                CustomElement.observedAttributes.forEach(a => this.ctx.onUpdate?.call(this.ctx, a, null, (this as any)[a]));
-                // lazy initialization done
-                this.ready = true;
+                (this as any)[ctx].onSlotChange && this.addEventListener('slotchange', () => (this as any)[ctx].onSlotChange?.call((this as any)[ctx]));
+                (this as any)[ctx].onMount?.call((this as any)[ctx]);
+                CustomElement.observedAttributes.forEach(a => (this as any)[ctx].onUpdate?.call((this as any)[ctx], a, null, (this as any)[a]));
             }
         }
         disconnectedCallback() {
-            this.ctx.onUnmount?.call(this.ctx);
+            (this as any)[ctx].onUnmount?.call((this as any)[ctx]);
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-            (newValue !== oldValue) && this.ctx.onUpdate?.call(this.ctx, name, oldValue, newValue);
+            (newValue !== oldValue) && (this as any)[ctx].onUpdate?.call((this as any)[ctx], name, oldValue, newValue);
         }
         adoptedCallback() {
-            this.ctx.onAdopt?.call(this.ctx);
+            (this as any)[ctx].onAdopt?.call((this as any)[ctx]);
         }
     }
     const options = superTag ? { extends: superTag } : undefined;
