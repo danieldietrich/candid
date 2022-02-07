@@ -9,20 +9,22 @@ export class WebComponent extends HTMLElement {
         this.style.display = 'none';
     }
     connectedCallback() {
-        const template = this.querySelector('template');
-        if (template) {
-            createCustomElement(template, ...['name', 'extends', 'mode', 'props'].map(a => this.getAttribute(a)) as Args);
+        const name = this.getAttribute('name')
+        const props = this.getAttribute('props');
+        if (name) {
+            createWebComponent(name, {
+                extends: this.getAttribute('extends'),
+                mode: this.getAttribute('mode') as ShadowRootMode | null,
+                props: props && eval('(' + props + ')') || {}, // no ternary ? : possible here!
+                template: this.querySelector('template')
+            });
         }
     }
 }
 
-type AttributeValue = string | null;
-
-type Args = [AttributeValue, AttributeValue, AttributeValue, AttributeValue];
-
 type HTMLElementConstructor = { new(): HTMLElement };
 
-type Context = {
+export type Context = {
     element: HTMLElement
     root: HTMLElement | ShadowRoot
     onMount?: () => void
@@ -31,12 +33,6 @@ type Context = {
     onAdopt?: () => void
     onSlotChange?: () => void
 }
-
-type Props = {
-    [prop: string]: PropValue
-}
-
-type PropValue = string | number | boolean | null | undefined
 
 type Init = {
     script: string
@@ -82,14 +78,26 @@ function publish(topic: Topic, message: any): void {
 /**
  * Creates a custom element.
  */
-function createCustomElement(template: HTMLTemplateElement, name: AttributeValue, superTag: AttributeValue, mode: AttributeValue, propsStr: AttributeValue): void {
-    if (!name) {
-        return;
-    }
+export type Options = {
+    extends?: string | null               // super tag name (default: null)
+    mode?: ShadowRootMode | null          // shadow root mode (default: null)
+    props?: Props                         // observed properties and default values
+    template?: HTMLTemplateElement | null //  the html template
+}
+
+export type Props = {
+    [prop: string]: PropValue
+}
+
+export type PropValue = string | number | boolean | null | undefined
+
+// Candid.createWebComponent()
+export function createWebComponent(name: string, options: Options = {}): void {
+    const { extends: superTag, mode, props = {}, template }  = options;
     const superType = superTag ? document.createElement(superTag).constructor as HTMLElementConstructor : HTMLElement;
-    const props: Props = propsStr ? eval('(' + propsStr + ')') : {};
     let init: Promise<Init>;
     class CustomElement extends superType {
+        declare readonly [ctx]: Context;
         constructor() {
             super();
             Object.defineProperty(this, ctx, {
@@ -101,61 +109,62 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
               }
             });
             if (init === undefined) {
-                init = new Promise(async (resolve) => {
+                init = template ? new Promise(async (resolve) => {
                     const { content } = template;
-                    await Promise.all(Array.from(template.content.querySelectorAll('web-import')).map(
+                    await Promise.all(Array.from(content.querySelectorAll('web-import')).map(
                         e => webImport(e))
                     );
-                    const scripts = Array.from(template.content.querySelectorAll('script:not([src])')).map(
+                    const scripts = Array.from(content.querySelectorAll('script:not([src])')).map(
                         e => e.parentNode?.removeChild(e).textContent
                     );
                     const script = '{' + scripts.join('}{') + '}'; // add semicollon to avoid syntax ambiguities when joining multiple scripts
                     resolve({ script });
-                });
+                }) : Promise.resolve({ script: '' });
             }
         }
         static get observedAttributes() {
             return Object.keys(props);
         }
         async connectedCallback() {
-            const ready = Object.isFrozen((this as any)[ctx]);
+            const ready = Object.isFrozen(this[ctx]);
             if (ready) {
-                (this as any)[ctx].onMount?.call((this as any)[ctx]);
+                this[ctx].onMount?.call(this[ctx]);
             } else {
                 // wait for lazy initialization of web-imorts and scripts
                 const { script } = await init;
                 // make sure all props are ready before calling the script
                 initializeProperties(this, props);
                 // make content available in the live DOM
-                const content = template.content.cloneNode(true);
-                (this as any)[ctx].root.appendChild(content);
-                // now the script has all it needs (we just let it crash in the case of errors)
-                (function () {
-                    try {
-                        eval(script)
-                    } catch (err) {
-                        console.error('[candid] error executing script of web component \'' + name + '\'\n', err, '\n', script);
-                    }
-                }).call((this as any)[ctx]);
-                Object.freeze((this as any)[ctx]); // frozen indicates ready-state of this web-component
+                if (template) {
+                    const content = template.content.cloneNode(true);
+                    this[ctx].root.appendChild(content);
+                    // now the script has all it needs (we just let it crash in the case of errors)
+                    (function () {
+                        try {
+                            eval(script)
+                        } catch (err) {
+                            console.error('[candid] error executing script of web component \'' + name + '\'\n', err, '\n', script);
+                        }
+                    }).call(this[ctx]);
+                }
+                Object.freeze(this[ctx]); // frozen indicates ready-state of this web-component
                 // the script has registered its lifecycle callbacks, now we can make use of them
-                (this as any)[ctx].onSlotChange && this.addEventListener('slotchange', () => (this as any)[ctx].onSlotChange?.call((this as any)[ctx]));
-                (this as any)[ctx].onMount?.call((this as any)[ctx]);
-                CustomElement.observedAttributes.forEach(a => (this as any)[ctx].onUpdate?.call((this as any)[ctx], a, null, (this as any)[a]));
+                this[ctx].onSlotChange && this.addEventListener('slotchange', () => this[ctx].onSlotChange?.call(this[ctx]));
+                this[ctx].onMount?.call(this[ctx]);
+                CustomElement.observedAttributes.forEach(a => this[ctx].onUpdate?.call(this[ctx], a, null, (this as any)[a]));
             }
         }
         disconnectedCallback() {
-            (this as any)[ctx].onUnmount?.call((this as any)[ctx]);
+            this[ctx].onUnmount?.call(this[ctx]);
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-            (newValue !== oldValue) && (this as any)[ctx].onUpdate?.call((this as any)[ctx], name, oldValue, newValue);
+            (newValue !== oldValue) && this[ctx].onUpdate?.call(this[ctx], name, oldValue, newValue);
         }
         adoptedCallback() {
-            (this as any)[ctx].onAdopt?.call((this as any)[ctx]);
+            this[ctx].onAdopt?.call(this[ctx]);
         }
     }
-    const options = superTag ? { extends: superTag } : undefined;
-    customElements.define(name, CustomElement, options);
+    customElements.define(name, CustomElement, superTag ? { extends: superTag } : undefined);
 }
 
 /**
