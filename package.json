@@ -14,7 +14,7 @@
   "files": [
     "dist"
   ],
-  "types": "./dist/candid.d.ts",
+  "types": "./dist/index.d.ts",
   "main": "./dist/candid.umd.js",
   "module": "./dist/candid.es.js",
   "exports": {
@@ -26,7 +26,7 @@
   "scripts": {
     "dev": "vite",
     "dev:gitpod": "APP_ENV=gitpod vite",
-    "build:lib": "vite build --config ./vite-dist.config.js && tsc && mv dist/index.d.ts dist/candid.d.ts && find dist/*.d.ts -type f ! -name 'candid.d.ts' -delete",
+    "build:lib": "vite build --config ./vite-dist.config.js && tsc",
     "build:docs": "vite build",
     "prepare": "npm run build:lib"
   },

@@ -12,7 +12,7 @@ export class WebComponent extends HTMLElement {
         const name = this.getAttribute('name')
         const props = this.getAttribute('props');
         if (name) {
-            createWebComponent(name, {
+            createWebComponent(name as Name, { // might throw when registering the custom element
                 extends: this.getAttribute('extends'),
                 mode: this.getAttribute('mode') as ShadowRootMode | null,
                 props: props && eval('(' + props + ')') || {}, // no ternary ? : possible here!
@@ -21,8 +21,6 @@ export class WebComponent extends HTMLElement {
         }
     }
 }
-
-type HTMLElementConstructor = { new(): HTMLElement };
 
 export type Context = {
     element: HTMLElement
@@ -76,7 +74,7 @@ function publish(topic: Topic, message: any): void {
 }
 
 /**
- * Creates a custom element.
+ * The options for web component creation.
  */
 export type Options = {
     extends?: string | null               // super tag name (default: null)
@@ -85,16 +83,33 @@ export type Options = {
     template?: HTMLTemplateElement | null //  the html template
 }
 
+/**
+ * Web component properties are an object of properties
+ * that can be coerced to element attribute types.
+ */
 export type Props = {
     [prop: string]: PropValue
 }
 
+/**
+ * Web component property value type,
+ * can be coerced to an attribute value type.
+ */
 export type PropValue = string | number | boolean | null | undefined
 
-// Candid.createWebComponent()
-export function createWebComponent(name: string, options: Options = {}): void {
+/**
+ * The name of a web component needs to contain at least one dash '-'.
+ */
+export type Name = `${string}-${string}`;
+
+/**
+ * Create a web component by
+ * 1) declaring a custom element
+ * 2) defining the custom element
+ */
+export function createWebComponent(name: Name, options: Options = {}): void {
     const { extends: superTag, mode, props = {}, template }  = options;
-    const superType = superTag ? document.createElement(superTag).constructor as HTMLElementConstructor : HTMLElement;
+    const superType = superTag ? document.createElement(superTag).constructor as CustomElementConstructor : HTMLElement;
     let init: Promise<Init>;
     class CustomElement extends superType {
         declare readonly [ctx]: Context;
