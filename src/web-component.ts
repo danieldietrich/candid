@@ -45,6 +45,40 @@ type Init = {
 // used to protect the context property key of web-components
 const ctx = Symbol();
 
+const topics: Map<Topic, Subscriptions> = new Map();
+
+type Topic = string;
+type Subscriptions = Set<Subscriber<any>>;
+type Subscriber<T> = (e: T) => void;
+type Unsubscribe = () => void;
+
+/**
+ * Subscribes a subscriber to a certain topic.
+ * Returns an unsubscribe function.
+ */
+function subscribe<T>(topic: Topic, subscriber: Subscriber<T>): Unsubscribe {
+    let subscriptions = topics.get(topic);
+    if (!subscriptions) {
+        topics.set(topic, subscriptions = new Set());
+    }
+    subscriptions.add(subscriber);
+    return () => { subscriptions!.delete(subscriber) };
+}
+
+/**
+ * Publishes a message to all subscribers of a given topic.
+ * The subscribers are informed in no particular order.
+ */
+function publish(topic: Topic, message: any): void {
+    topics.get(topic)?.forEach(subscriber => {
+        try {
+            subscriber(message);
+        } catch (err) {
+            console.error("[candid] error publishing message:", err, "\n", { topic, message });
+        }
+    });
+}
+
 /**
  * Creates a custom element.
  */
@@ -61,7 +95,9 @@ function createCustomElement(template: HTMLTemplateElement, name: AttributeValue
             Object.defineProperty(this, ctx, {
               value: {
                 element: this,
-                root: (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this
+                root: (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this,
+                publish,
+                subscribe
               }
             });
             if (init === undefined) {
