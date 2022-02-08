@@ -22,3 +22,36 @@ The project is built using [vite](https://vitejs.dev).
 * Run `npm run build:lib` to bundle the library to `dist/`
 
 The documentation is automatically built and deployed by `.github/workflows/build-and-deploy.yml` on each push or pull request to main.
+
+## Release
+
+Perform checks:
+
+```sh
+# ensure to be on main branch
+git checkout main
+# ensure to have a clean state
+git status
+# check the release contents
+npm pack
+```
+
+Create a release:
+
+```sh
+# increase version
+npm version minor # or patch, major, etc.
+# push version change
+git push
+# create a release tag, e.g. <version> = v1.2.3
+git tag <version>
+# push the release tag, e.g. <version> = v1.2.3
+git push origin <version>
+```
+
+Publish to NPM:
+
+```sh
+# pack and upload the release bundle to NPM
+npm publish
+```
