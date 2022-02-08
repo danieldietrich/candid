@@ -41,11 +41,8 @@ Create a release:
 ```sh
 # increase version
 npm version minor # or patch, major, etc.
-# push version change
+# push version change and tag
 git push
-# create a release tag, e.g. <version> = v1.2.3
-git tag <version>
-# push the release tag, e.g. <version> = v1.2.3
 git push origin <version>
 ```
 
