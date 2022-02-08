@@ -239,7 +239,9 @@ Given an element `el`, the following information is available:
 
 ```ts
 const name = el.hasAttribute('is') : el.getAttribute('is') : el.tagName.toLowerCase();
-const superTag = el.hasAttribute('is') ? el.getAttribute('is') : undefined;
+const superTag = el.hasAttribute('is') ? el.tagName.toLowerCase() : undefined;
 const mode = el.shadowRoot?.mode;
+const propNames = customElements.get('hello-world').observedAttributes;
+const props = propNames.reduce((props, name) => (props[name] = el.getAttribute(name), props), {});
 const customElements = customElements.get(name);
 ```
