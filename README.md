@@ -17,7 +17,7 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 
 ## Usage
 
-The first step is to import Candid in your HTML
+The first step is to import Candid in your HTML.
 
 ```html
 <!-- umd package -->
@@ -30,7 +30,7 @@ The first step is to import Candid in your HTML
 ### Declaratively
 
 Candid can be used either declaratively in the HTML document.
- 
+
 ```html
 <body>
   <say-hi></say-hi>
@@ -48,6 +48,12 @@ All web components and web imports (see below) are hidden using `{ display: none
 ### Programmatically
 
 Candid can be used programmatically by using the JavaScript/TypeScript API.
+
+Installation:
+
+```sh
+$ npm i candid
+```
 
 **Vanilla JS:**
 
@@ -241,5 +247,5 @@ const superTag = el.hasAttribute('is') ? el.tagName.toLowerCase() : undefined;
 const mode = el.shadowRoot?.mode;
 const propNames = customElements.get('hello-world').observedAttributes;
 const props = propNames.reduce((props, name) => (props[name] = el.getAttribute(name), props), {});
-const customElements = customElements.get(name);
+const customElement = customElements.get(name);
 ```
