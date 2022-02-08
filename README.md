@@ -7,14 +7,17 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 ## Features
 
 * **No framework, no dependencies, just markup and pure JavaScript**
-* No need to learn anything about NodeJS, just edit and run index.html
 * Builds on top of [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), but without boilerplate
 * Out-of-the-box [custom element best practices](https://developers.google.com/web/fundamentals/web-components/best-practices)
-* Encapsulation of DOM, style and state
+* HTML and JS/TS web component APIs
+* Choose between openness and encapsulation (shadow root)
+* Augment existing HTML documents
+* Web imports of HTML fragments (HTML API only)
+* Lazy loading support for web component contents
 
 ## Usage
 
-1. Add Candid `<script>` to your HTML
+The first step is to import Candid in your HTML
 
 ```html
 <!-- umd package -->
@@ -24,48 +27,87 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 <script type="module" src="https://esm.run/candid"></script>
 ```
 
-2. Define your web components
-
+Candid can be used either declaratively in the HTML document.
+ 
 ```html
-<web-component name="hello-world" props="{ greeting: 'Hi!'}">
+<body>
+  <say-hi></say-hi>
+  <web-component name="say-hi">
     <template>
-        <script>
-            // all your state & logic goes here
-            this.onMount = () => {
-                console.log("component mounted");
-            };
-            this.onUnmount = () => {
-                console.log("component unmounts");
-            };
-            this.onUpdate = (name, oldValue, newValue) => {
-                console.log("attribute changed");
-                this.root.querySelector('h1').innerHTML = `
-                    Hello ${newValue}!
-                `;
-            };
-            this.onAdpopt = () => {
-                console.log("component changes document");
-            };
-        </script>
-        <style>
-            /* component styles */
-            .greet {
-                color: red;
-            }
-        </style>
-        <h1 class="greet"></h1>
+      <script>console.log('Hi!')</script>
     </template>
-</web-component>
+  </web-component>
+  <script type="module" src="//esm.run/candid"></script>
+</body>
 ```
 
-3. Use your web components
+Or Candid can be used programmatically by using the JavaScript/TypeScript API.
 
-```html
-<!-- renders Hi! and Hi ya'all! -->
-<body>
-    <hello-world />
-    <hello-world greeting="Hi ya'all!" />
-</body>
+**Vanilla JS:**
+
+```ts
+import * as Candid from 'candid';
+
+Candid.init();
+
+const template = document.createElement('template');
+template.innerHTML = `<script>console.log('Hi!')</script>`;
+
+Candid.createWebComponent('say-hi', { template });
+
+const sayHi = document.createElement('say-hi');
+document.body.appendChild(sayHi);
+```
+
+**Using JSX:** (3rd party lib needed)
+
+```tsx
+import * as Candid from 'candid';
+
+Candid.init();
+
+const myScript = 'console.log("Hi!")';
+
+Candid.createWebComponent('say-hi', { template: (
+  <template>
+    <script>{myScript}</script>
+  <template>
+)});
+```
+
+## Options
+
+A web component can be defined using the following options:
+
+```ts
+type Options = {
+  extends?: string /* tag name */
+  mode?: ShadowRootMode /* 'open' | 'closed' */ | null
+  props?: Props /* { [key: string]?: string | number | boolean | null } */
+  template?: HTMLTemplateElement | null
+}
+```
+
+## Template
+
+The template may contain arbitrary HTML.
+Style has a local scope in the presence of a shadow root.
+Inline scripts (without src attribute) will be executed once on web component instantiation.
+After that, only callbacks will be called.
+
+A script's `this` is the context of a web component and has the following type:
+
+```ts
+type Context = {
+  element: HTMLElement               // the custom element
+  root: HTMLElement | ShadowRoot     // element.shadowRoot || element
+  onMount?: () => void               // called when connected to the DOM
+  onUnmount?: () => void             // called when disconnecting from DOM
+  // called on attribute or property change, if oldValue !== newValue
+  onUpdate?: (name: string, oldValue: string | null, newValue: string | null) => void
+  onAdopt?: () => void               // called when custom element changes the document
+  onSlotChange?: (e: Event) => void  // called a slot changes
+}
 ```
 
 ## Safari support for customized built-in elements
@@ -74,7 +116,7 @@ Web components work in all major browsers and Candid can be used without any has
 
 Safari [does need a polyfill](https://caniuse.com/mdn-api_customelementregistry_builtin) for [customized built-in elements](https://html.spec.whatwg.org/multipage/custom-elements.html#custom-elements-customized-builtin-example).
 
-**Solution:** add the following script to the the HTML `<head>` element.
+**Solution:** add the `@ungap/custom-elements` script by [@WebReflection](https://twitter.com/WebReflection) to the HTML `<head>` section.
 
 ```html
 <script src="//cdn.jsdelivr.net/npm/@ungap/custom-elements"></script>
