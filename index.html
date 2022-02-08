@@ -20,7 +20,7 @@
   <script>
     if (navigator.vendor.match(/apple/i)) {
         const script = document.createElement('script');
-        script.src = "//cdn.jsdelivr.net/npm/@ungap/custom-elements";
+        script.src = "https://cdn.jsdelivr.net/npm/@ungap/custom-elements";
         document.head.appendChild(script);
     }
   </script>
@@ -40,9 +40,13 @@
   <!-- however, it will have a (shadow) root and a __ctx -->
   <web-component name="no-template"></web-component>
   <!-- web components can have sub-web-components (don't do that) -->
-  <web-component name="hello-world" mode="open">
+  <web-component name="hello-world" mode="open" props="{ say: 'hi!' }">
     <template>
-      <script>console.log('hello!');</script>
+      <script>
+        this.onMount = () => console.log('[hello-world] onMount');
+        this.onUpdate = (name, oldValue, newValue) => console.log(`[hello-world] onUpdate(name: ${name}, oldValue: ${oldValue}, newValue: ${newValue})`);
+        this.onSlotChange = (e) => console.log('[hello-world] onSlotChange', e);
+      </script>
       <!-- it is possible to load css using a web import but the recommended way is to use style's @import -->
       <web-import src="hello-world.css.html"></web-import>
       <h1>Hi <human-being></human-being>!</h1>
