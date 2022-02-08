@@ -213,7 +213,7 @@ Safari [does need a polyfill](https://caniuse.com/mdn-api_customelementregistry_
 
 ## How to stop FOUC
 
-FOUC stands for Flash of Unstyled Content. It happens when web components are already inserted in the DOM but not yet defined. It can be prevented by conditionally styling the elements.
+FOUC stands for Flash of Unstyled Content (FOUC). It happens when web components are already inserted in the DOM but not yet defined. FOUC can be prevented by conditionally styling the elements.
 
 ```
 my-element:not(:defined) {
