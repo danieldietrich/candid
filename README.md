@@ -161,7 +161,7 @@ When the custom element changes the document, the following effects happen:
 
 Web imports are plain HTML imports that are inserted into the DOM.
 
-Once Candid is imported, web imports are fetched and the DOM element is replaced by the loaded HTML content. Especially web components can be imported using the `web-import` element.
+Once Candid is imported, web imports are fetched and the DOM elements are replaced by the loaded HTML contents. Especially web components can be imported using the `web-import` element.
 
 ```html
 <head>
@@ -190,6 +190,8 @@ Web-imports can be nested and cross-reference different domains. Beware of cycle
 
 ## Extending built-in HTML elements
 
+Web components work in all major browsers and Candid can be used without any hassles. However, it is possible to extend built-in HTML elements.
+
 ```html
 <form>
   <input is="fancy-input">
@@ -200,10 +202,6 @@ Web-imports can be nested and cross-reference different domains. Beware of cycle
   </template>
 </web-component>
 ```
-
-## Safari support for customized built-in elements
-
-Web components work in all major browsers and Candid can be used without any hassles.
 
 Safari [does need a polyfill](https://caniuse.com/mdn-api_customelementregistry_builtin) for [customized built-in elements](https://html.spec.whatwg.org/multipage/custom-elements.html#custom-elements-customized-builtin-example).
 
