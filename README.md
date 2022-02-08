@@ -17,6 +17,8 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 
 ## Usage
 
+### Declaratively
+
 The first step is to import Candid in your HTML.
 
 ```html
@@ -26,8 +28,6 @@ The first step is to import Candid in your HTML.
 <!-- alternative: modern javascript -->
 <script type="module" src="https://esm.run/candid"></script>
 ```
-
-### Declaratively
 
 Candid can be used either declaratively in the HTML document.
 
