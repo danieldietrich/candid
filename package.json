@@ -1,6 +1,6 @@
 {
   "name": "candid",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Candid is an unopinionated, frameworkless JavaScript library for building web applications.",
   "keywords": [
     "candid",
