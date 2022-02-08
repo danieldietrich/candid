@@ -135,7 +135,7 @@ export function createWebComponent(name: Name, options: Options = {}): void {
                 }
                 Object.freeze(this[ctx]); // frozen indicates ready-state of this web-component
                 // the script has registered its lifecycle callbacks, now we can make use of them
-                this[ctx].onSlotChange && this.addEventListener('slotchange', () => this[ctx].onSlotChange?.call(this[ctx]));
+                this[ctx].onSlotChange && this.addEventListener('slotchange', (e) => this[ctx].onSlotChange?.call(this[ctx], e));
                 this[ctx].onMount?.call(this[ctx]);
                 CustomElement.observedAttributes.forEach(a => this[ctx].onUpdate?.call(this[ctx], a, null, (this as any)[a]));
             }
