@@ -29,7 +29,7 @@ The first step is to import Candid in your HTML.
 <script type="module" src="https://esm.run/candid"></script>
 ```
 
-Candid can be used either declaratively in the HTML document.
+Candid can be used declaratively in the HTML document.
 
 ```html
 <body>
