@@ -7,11 +7,11 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 ## Features
 
 * **No framework, no dependencies, just markup and pure JavaScript**
-* Builds on top of [Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), but without boilerplate
+* Builds on top of [web components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), but without boilerplate
 * Out-of-the-box [custom element best practices](https://developers.google.com/web/fundamentals/web-components/best-practices)
 * HTML and JS/TS web component APIs
 * Choose between openness and encapsulation (shadow root)
-* Augment existing HTML documents
+* Augment existing HTML elements
 * Web imports of HTML fragments (HTML API only)
 * Lazy loading support for web component contents
 
@@ -27,6 +27,8 @@ The first step is to import Candid in your HTML
 <script type="module" src="https://esm.run/candid"></script>
 ```
 
+### Declaratively
+
 Candid can be used either declaratively in the HTML document.
  
 ```html
@@ -41,9 +43,11 @@ Candid can be used either declaratively in the HTML document.
 </body>
 ```
 
-The all web components and web imports (see below) are hidden using `{ display: none }` after the custom element is created.
+All web components and web imports (see below) are hidden using `{ display: none }` after the custom element is created.
 
-Or Candid can be used programmatically by using the JavaScript/TypeScript API.
+### Programmatically
+
+Candid can be used programmatically by using the JavaScript/TypeScript API.
 
 **Vanilla JS:**
 
@@ -211,7 +215,7 @@ Safari [does need a polyfill](https://caniuse.com/mdn-api_customelementregistry_
 
 ## How to stop FOUC
 
-FOUC stands for Flash of Unstyled Content. It happens when a web component are already inserted in the DOM but not yet defined. It can be prevented by conditionally styling the elements.
+FOUC stands for Flash of Unstyled Content. It happens when web components are already inserted in the DOM but not yet defined. It can be prevented by conditionally styling the elements.
 
 ```
 my-element:not(:defined) {
@@ -223,7 +227,7 @@ my-element:not(:defined) {
 }
 ```
 
-See [Google Web Fundamentals](https://developers.google.com/web/fundamentals/web-components/customelements#prestyle) and [SO](https://stackoverflow.com/questions/62683430/how-to-stop-fouc-from-happening-with-native-web-components).
+See [Google Web Fundamentals](https://developers.google.com/web/fundamentals/web-components/customelements#prestyle) and [StackOverflow](https://stackoverflow.com/questions/62683430/how-to-stop-fouc-from-happening-with-native-web-components).
 
 ## Security
 
@@ -235,7 +239,7 @@ Given an element `el`, the following information is available:
 
 ```ts
 const name = el.hasAttribute('is') : el.getAttribute('is') : el.tagName.toLowerCase();
-const extends = el.hasAttribute('is') ? el.getAttribute('is') : undefined;
+const superTag = el.hasAttribute('is') ? el.getAttribute('is') : undefined;
 const mode = el.shadowRoot?.mode;
-const type = customElements.get(name);
+const customElements = customElements.get(name);
 ```
