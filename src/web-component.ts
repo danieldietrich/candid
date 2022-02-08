@@ -26,13 +26,14 @@ export class WebComponent extends HTMLElement {
  * The type of `this` within the <script> elements of a web component template.
  */
 export type Context = {
-    element: HTMLElement
-    root: HTMLElement | ShadowRoot
-    onMount?: () => void
-    onUnmount?: () => void
+    element: HTMLElement               // the custom element
+    root: HTMLElement | ShadowRoot     // element.shadowRoot || element
+    onMount?: () => void               // called when connected to the DOM
+    onUnmount?: () => void             // called when disconnecting from DOM
+    // called on attribute or property change, if oldValue !== newValue
     onUpdate?: (name: string, oldValue: string | null, newValue: string | null) => void
-    onAdopt?: () => void
-    onSlotChange?: () => void
+    onAdopt?: () => void               // called when custom element changes the document
+    onSlotChange?: (e: Event) => void  // called a slot changes
 }
 
 /**
