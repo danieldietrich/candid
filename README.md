@@ -21,10 +21,10 @@ The first step is to import Candid in your HTML
 
 ```html
 <!-- umd package -->
-<script src="//cdn.jsdelivr.net/npm/candid"></script>
+<script src="https://cdn.jsdelivr.net/npm/candid"></script>
 
 <!-- alternative: modern javascript -->
-<script type="module" src="//esm.run/candid"></script>
+<script type="module" src="https://esm.run/candid"></script>
 ```
 
 Candid can be used either declaratively in the HTML document.
@@ -40,6 +40,8 @@ Candid can be used either declaratively in the HTML document.
   <script type="module" src="//esm.run/candid"></script>
 </body>
 ```
+
+The all web components and web imports (see below) are hidden using `{ display: none }` after the custom element is created.
 
 Or Candid can be used programmatically by using the JavaScript/TypeScript API.
 
@@ -106,8 +108,93 @@ type Context = {
   // called on attribute or property change, if oldValue !== newValue
   onUpdate?: (name: string, oldValue: string | null, newValue: string | null) => void
   onAdopt?: () => void               // called when custom element changes the document
-  onSlotChange?: (e: Event) => void  // called a slot changes
+  onSlotChange?: (e: Event) => void  // called when a slot changes
 }
+```
+
+All callbacks can be set during creation of the web component. After that, the context is read-only.
+
+## Lifecycle
+
+The user may set callbacks on the context object:
+
+* `onMount`: called when connected to the DOM
+* `onUnmount`: called when disconnecting from DOM
+* `onUpdate`: called on attribute or property change, if oldValue !== newValue
+* `onAdopt`: called when custom element changes the document
+* `onSlotChange`: called when a slot changes
+
+When a web component (read: a custom element) is created, the following effects happen:
+
+1. if mode is set then the shadow root is created (default: no shadow root)
+2. the context property is created, containing element and root
+3. the web imports are performed asynchronously
+4. the scripts are removed from the template
+
+After creation, the element can be mutated by the user, e.g. setting properties, attributes or registering listeners. When the element is connected to the DOM, the following effects happen:
+
+1. the observed properties are linked to the attributes
+2. the template is cloned and inserted into the (shadow) root
+3. the scripts are executed
+4. the context is frozen
+5. the `onMount` callback is called
+6. the `onUpdate` callback is called for all observed properties
+7. the `onSlotChange` callback is called for all slots
+
+When the element is disconnected from the DOM, the following effects happen:
+
+* the `onUnmount` callback is called
+
+When slot content changes, the following effects happen:
+
+* the `onSlotChange` callback is called
+
+When the custom element changes the document, the following effects happen:
+
+* the `onAdopt` callback is called
+
+## Web imports
+
+Web imports are plain HTML imports that are inserted into the DOM.
+
+Once Candid is imported, web imports are fetched and the DOM element is replaced by the loaded HTML content. Especially web components can be imported using the `web-import` element.
+
+```html
+<head>
+  <base href="/components">
+  <link rel="preload" href="web-components.html" as="fetch">
+</head>
+<body>
+  <web-import src="web-components.html"></web-import>
+  <script type="module" src="https://esm.run/candid"></script>
+</body>
+```
+
+Web components can have nested `web-import` elements. These are loaded asynchronously when the first web component is instantiated. Relative urls are resolved against the base URL if the origin is the same, otherwise the URL is resolved using the remote URL.
+
+```html
+<web-component name="lazy-one" mode="open">
+  <template>
+    <web-import src="lazy-one.css.html"></web-import>
+    <web-import src="https://my.cdn/lazy-one.js.html"></web-import>
+    <h1>Candid!</h1>
+  </template>
+</web-component>
+```
+
+Web-imports can be nested and cross-reference different domains. Beware of cycles!
+
+## Extending built-in HTML elements
+
+```html
+<form>
+  <input is="fancy-input">
+</form>
+<web-component name="fancy-input" extends="input" props="{ type: 'text', placeholder: 'fancy' }">
+  <template>
+    <h1>Candid!</h1>
+  </template>
+</web-component>
 ```
 
 ## Safari support for customized built-in elements
@@ -119,5 +206,36 @@ Safari [does need a polyfill](https://caniuse.com/mdn-api_customelementregistry_
 **Solution:** add the `@ungap/custom-elements` script by [@WebReflection](https://twitter.com/WebReflection) to the HTML `<head>` section.
 
 ```html
-<script src="//cdn.jsdelivr.net/npm/@ungap/custom-elements"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ungap/custom-elements"></script>
+```
+
+## How to stop FOUC
+
+FOUC stands for Flash of Unstyled Content. It happens when a web component are already inserted in the DOM but not yet defined. It can be prevented by conditionally styling the elements.
+
+```
+my-element:not(:defined) {
+  /* Pre-style, give layout, replicate my-element's eventual styles, etc. */
+  display: inline-block;
+  height: 100vh;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+```
+
+See [Google Web Fundamentals](https://developers.google.com/web/fundamentals/web-components/customelements#prestyle) and [SO](https://stackoverflow.com/questions/62683430/how-to-stop-fouc-from-happening-with-native-web-components).
+
+## Security
+
+Candid internally uses `eval` to evaluate scripts. If there are security concerns, use the [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) (CSP) to prevent the scripts from being evaluated.
+
+## Reflection
+
+Given an element `el`, the following information is available:
+
+```ts
+const name = el.hasAttribute('is') : el.getAttribute('is') : el.tagName.toLowerCase();
+const extends = el.hasAttribute('is') ? el.getAttribute('is') : undefined;
+const mode = el.shadowRoot?.mode;
+const type = customElements.get(name);
 ```
