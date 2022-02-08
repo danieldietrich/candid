@@ -21,10 +21,10 @@ The first step is to import Candid in your HTML
 
 ```html
 <!-- umd package -->
-<script src="https://cdn.jsdelivr.net/npm/candid"></script>
+<script src="//cdn.jsdelivr.net/npm/candid"></script>
 
 <!-- alternative: modern javascript -->
-<script type="module" src="https://esm.run/candid"></script>
+<script type="module" src="//esm.run/candid"></script>
 ```
 
 Candid can be used either declaratively in the HTML document.
