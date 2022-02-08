@@ -215,7 +215,7 @@ Safari [does need a polyfill](https://caniuse.com/mdn-api_customelementregistry_
 
 FOUC stands for Flash of Unstyled Content (FOUC). It happens when web components are already inserted in the DOM but not yet defined. FOUC can be prevented by conditionally styling the elements.
 
-```
+```css
 my-element:not(:defined) {
   /* Pre-style, give layout, replicate my-element's eventual styles, etc. */
   display: inline-block;
