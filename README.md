@@ -17,20 +17,20 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 
 ## Usage
 
-### Declaratively
-
-The first step is to import Candid in your HTML.
+The _Vanilla HTML_ users just add the script to their index.html:
 
 ```html
-<!-- umd package -->
 <script src="https://cdn.jsdelivr.net/npm/candid"></script>
-
-<!-- alternative: modern javascript -->
-<script type="module" src="https://esm.run/candid"></script>
 ```
 
-Candid can be used declaratively in the HTML document.
+The _Node_ users add candid to their project:
 
+```sh
+npm i -D candid
+```
+
+Candid can be pure HTML.
+ 
 ```html
 <body>
   <say-hi></say-hi>
@@ -47,7 +47,7 @@ All web components and web imports (see below) are hidden using `{ display: none
 
 ### Programmatically
 
-Candid can be used programmatically by using the JavaScript/TypeScript API.
+Candid has a JavaScript/TypeScript API.
 
 Installation:
 
@@ -65,26 +65,10 @@ Candid.init();
 const template = document.createElement('template');
 template.innerHTML = `<script>console.log('Hi!')</script>`;
 
-Candid.createWebComponent('say-hi', { template });
+Candid.defineWebComponent('say-hi', { template });
 
 const sayHi = document.createElement('say-hi');
-document.body.appendChild(sayHi);
-```
-
-**Using JSX:** (3rd party lib needed)
-
-```tsx
-import * as Candid from 'candid';
-
-Candid.init();
-
-const myScript = 'console.log("Hi!")';
-
-Candid.createWebComponent('say-hi', { template: (
-  <template>
-    <script>{myScript}</script>
-  <template>
-)});
+document.querySelector('app').appendChild(sayHi);
 ```
 
 ## Options
@@ -112,7 +96,7 @@ A script's `this` is the context of a web component and has the following type:
 ```ts
 type Context = {
   element: HTMLElement               // the custom element
-  root: HTMLElement | ShadowRoot     // element.shadowRoot || element
+  root: HTMLElement | ShadowRoot     // element.shadowRoot || element, depending on the mode option
   onMount?: () => void               // called when connected to the DOM
   onUnmount?: () => void             // called when disconnecting from DOM
   // called on attribute or property change, if oldValue !== newValue
@@ -245,7 +229,7 @@ Given an element `el`, the following information is available:
 const name = el.hasAttribute('is') : el.getAttribute('is') : el.tagName.toLowerCase();
 const superTag = el.hasAttribute('is') ? el.tagName.toLowerCase() : undefined;
 const mode = el.shadowRoot?.mode;
-const propNames = customElements.get('hello-world').observedAttributes;
-const props = propNames.reduce((props, name) => (props[name] = el.getAttribute(name), props), {});
 const customElement = customElements.get(name);
+const propNames = customElement.observedAttributes;
+const props = propNames.reduce((props, name) => (props[name] = el.getAttribute(name), props), {});
 ```
