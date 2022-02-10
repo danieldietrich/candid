@@ -12,7 +12,7 @@ export class WebComponent extends HTMLElement {
         const name = this.getAttribute('name')
         const props = this.getAttribute('props');
         if (name) {
-            createWebComponent(name as Name, { // might throw when registering the custom element
+            defineWebComponent(name as Name, { // might throw when registering the custom element
                 extends: this.getAttribute('extends'),
                 mode: this.getAttribute('mode') as ShadowRootMode | null,
                 props: props && eval('(' + props + ')') || {}, // no ternary ? : possible here!
@@ -23,18 +23,14 @@ export class WebComponent extends HTMLElement {
 }
 
 /**
- * The type of `this` within the <script> elements of a web component template.
+ * The initialized web component state.
  */
-export type Context = {
-    element: HTMLElement               // the custom element
-    root: HTMLElement | ShadowRoot     // element.shadowRoot || element
-    onMount?: () => void               // called when connected to the DOM
-    onUnmount?: () => void             // called when disconnecting from DOM
-    // called on attribute or property change, if oldValue !== newValue
-    onUpdate?: (name: string, oldValue: string | null, newValue: string | null) => void
-    onAdopt?: () => void               // called when custom element changes the document
-    onSlotChange?: (e: Event) => void  // called a slot changes
+type Init = {
+    script: string
 }
+
+// used to protect the context property key of web-components
+const ctx = Symbol();
 
 /**
  * The options for web component creation.
@@ -44,6 +40,20 @@ export type Options = {
     mode?: ShadowRootMode | null          // shadow root mode (default: null)
     props?: Props                         // observed properties and default values
     template?: HTMLTemplateElement | null //  the html template
+}
+
+/**
+ * The type of `this` within the <script> elements of a web component template.
+ */
+export type Context = {
+    element: HTMLElement               // the custom element
+    root: HTMLElement | ShadowRoot     // element.shadowRoot || element, depending on the mode option
+    onMount?: () => void               // called when connected to the DOM
+    onUnmount?: () => void             // called when disconnecting from DOM
+    // called on attribute or property change, if oldValue !== newValue
+    onUpdate?: (name: string, oldValue: string | null, newValue: string | null) => void
+    onAdopt?: () => void               // called when custom element changes the document
+    onSlotChange?: (e: Event) => void  // called a slot changes
 }
 
 /**
@@ -66,22 +76,12 @@ export type PropValue = string | number | boolean | null | undefined
 export type Name = `${string}-${string}`;
 
 /**
- * The initialized web component state.
- */
-type Init = {
-    script: string
-}
-
-// used to protect the context property key of web-components
-const ctx = Symbol();
-
-/**
  * Create a web component by
  * 1) declaring a custom element
  * 2) defining the custom element
  */
-export function createWebComponent(name: Name, options: Options = {}): void {
-    const { extends: superTag, mode, props = {}, template }  = options;
+export function defineWebComponent(name: Name, options: Options = {}): void {
+    const { extends: superTag, mode, props = {}, template } = options;
     const superType = superTag ? document.createElement(superTag).constructor as CustomElementConstructor : HTMLElement;
     let init: Promise<Init>;
     class CustomElement extends superType {
@@ -89,10 +89,10 @@ export function createWebComponent(name: Name, options: Options = {}): void {
         constructor() {
             super();
             Object.defineProperty(this, ctx, {
-              value: {
-                element: this,
-                root: (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this
-              }
+                value: {
+                    element: this,
+                    root: (mode === 'open' || mode === 'closed') ? this.attachShadow({ mode }) : this
+                }
             });
             if (init === undefined) {
                 init = template ? new Promise(async (resolve) => {
@@ -103,7 +103,7 @@ export function createWebComponent(name: Name, options: Options = {}): void {
                     const scripts = Array.from(content.querySelectorAll('script:not([src])')).map(
                         e => e.parentNode?.removeChild(e).textContent
                     );
-                    const script = '{' + scripts.join('}{') + '}'; // add semicollon to avoid syntax ambiguities when joining multiple scripts
+                    const script = '{' + scripts.join('}{') + '}'; // avoid syntax ambiguities by scoping scripts
                     resolve({ script });
                 }) : Promise.resolve({ script: '' });
             }
