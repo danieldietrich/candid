@@ -17,7 +17,7 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 
 ## Usage
 
-The _Vanilla HTML_ users just add the script to their index.html:
+The _Vanilla HTML_ users just add the script to their index.html, the module is loaded and available in the global `window.Candid` object.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/candid"></script>
