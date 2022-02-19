@@ -20,26 +20,17 @@ Candid is an unopinionated, frameworkless JavaScript library for building web ap
 The _Vanilla HTML_ users just add the script to their index.html, the module is loaded and available in the global `window.Candid` object.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/candid"></script>
-```
-
-The _Node_ users add candid to their project:
-
-```sh
-npm i -D candid
-```
-
-Candid can be pure HTML.
- 
-```html
 <body>
+  <!-- using a component -->
   <say-hi></say-hi>
+  <!-- defining a component -->
   <web-component name="say-hi">
     <template>
       <script>console.log('Hi!')</script>
     </template>
   </web-component>
-  <script type="module" src="//esm.run/candid"></script>
+  <!-- initializing Candid -->
+  <script src="https://cdn.jsdelivr.net/npm/candid"></script>
 </body>
 ```
 
